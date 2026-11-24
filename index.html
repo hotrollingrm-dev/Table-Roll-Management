@@ -81,6 +81,7 @@ svg.i{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.7;stro
 
 /* detail sheet */
 .sheet{position:fixed;right:max(16px,env(safe-area-inset-right,0px));top:calc(80px + env(safe-area-inset-top,0px));width:340px;z-index:4;padding:16px;display:flex;flex-direction:column;gap:14px;max-height:calc(100% - 110px);overflow:auto;transition:opacity .2s,transform .25s cubic-bezier(.2,.8,.2,1)}
+.sheet>*{flex-shrink:0}
 .sheet[data-open="false"]{opacity:0;transform:translateX(12px);pointer-events:none}
 .sh-head{display:flex;gap:12px;align-items:flex-start}
 .sh-head .ztag{width:44px;height:44px;font-size:18px;border-radius:10px}
@@ -97,6 +98,24 @@ dd{margin:0;text-align:right;font-family:var(--mono);font-size:12.5px}
 .btn2{flex:1;height:40px;border-radius:9px;border:1px solid var(--line);background:var(--surface-solid);color:var(--fg);font:inherit;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px}
 .btn2:hover{border-color:var(--fg3)}
 .btn2:disabled{opacity:.4;cursor:default}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border-radius:10px;overflow:hidden;border:1px solid var(--line)}
+.stats>div{background:var(--surface-solid);padding:10px 10px 9px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.stats span{font-size:11px;color:var(--fg2)}
+.stats b{font-family:var(--mono);font-size:19px;font-weight:500;letter-spacing:-.3px;font-variant-numeric:tabular-nums}
+.stats b i{font-style:normal;color:var(--fg3);margin:0 2px}
+.stats em{font-style:normal;font-size:11px;color:var(--fg3)}
+.pickhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:6px}
+.chip{height:44px;border-radius:8px;border:1px solid var(--line);background:var(--surface-solid);color:var(--fg);font-family:var(--mono);font-size:13.5px;cursor:pointer;font-variant-numeric:tabular-nums;transition:background .12s,border-color .12s,transform .08s}
+.chip:hover{border-color:var(--zc);background:color-mix(in srgb,var(--zc) 10%,var(--surface-solid))}
+.chip:active{transform:scale(.96)}
+details.sec summary{cursor:pointer;font-size:13px;color:var(--fg2);list-style:none;display:flex;align-items:center;gap:6px;min-height:32px}
+details.sec summary::before{content:"";width:6px;height:6px;border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor;transform:rotate(-45deg);transition:transform .15s}
+details.sec[open] summary::before{transform:rotate(45deg)}
+details.sec summary::-webkit-details-marker{display:none}
+.backlink{align-self:flex-start;display:inline-flex;align-items:center;gap:4px;height:32px;padding:0 10px 0 4px;margin:-4px 0 -6px -4px;border:0;border-radius:8px;background:transparent;color:var(--accent);font:inherit;font-size:13px;cursor:pointer}
+.backlink:hover{background:var(--line)}
 .note{font-size:12px;color:var(--fg3);line-height:1.5}
 
 /* labels in 3D */
@@ -254,8 +273,8 @@ function themeMats(){
   set('pit',css('--grid'),{metalness:0,roughness:1});
   set('hl',css('--hl'),{metalness:.4,roughness:.35,emissive:new THREE.Color(css('--hl')),emissiveIntensity:.35});
   set('slab',0xC9CDD2,{metalness:.85,roughness:.25});
-  set('housing',css('--housing'),{metalness:.15,roughness:.55});
-  set('housingLo',css('--housing-lo'),{metalness:.1,roughness:.7});
+  set('housing',css('--housing'),{metalness:.15,roughness:.55,transparent:true,opacity:.42,depthWrite:false});
+  set('housingLo',css('--housing-lo'),{metalness:.1,roughness:.7,transparent:true,opacity:.5,depthWrite:false});
   ZONES.forEach(z=>set('z'+z.id,css(ZCOL[z.id]),{metalness:.2,roughness:.6}));
   if(grid){grid.material.color.set(css('--grid')).convertSRGBToLinear();}
 }
@@ -454,12 +473,29 @@ function zoneRows(z){return '<dl>'+
   '<dt>Drawing</dt><dd>'+z.dwg+'</dd>'+
   (z.doc!=='—'?'<dt>Document</dt><dd>'+z.doc+'</dd>':'')+'</dl>'+(z.warn?'<div class="warn">'+z.warn+'</div>':'');}
 const closeBtn='<button class="iconbtn close" id="closeSheet" aria-label="ปิด"><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>';
+const ico={back:'<svg class="i" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>',next:'<svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>'};
+function kw(z){const m=z.motor.match(/([\d.]+)\s*kW/);return m?m[1]:'—';}
+function stats(z,r){return '<div class="stats">'+
+  '<div><span>Ø ปลาย / กลาง</span><b>'+Math.round(z.dEnd*1000)+'<i>/</i>'+Math.round(z.dMid*1000)+'</b><em>mm</em></div>'+
+  '<div><span>ความยาว body</span><b>'+Math.round(z.len*1000)+'</b><em>mm</em></div>'+
+  '<div><span>มอเตอร์</span><b>'+kw(z)+'</b><em>kW</em></div></div>';}
+function zoneHead(z,eyebrow,title,sub){return '<div class="sh-head"><span class="ztag">'+z.id+'</span><div class="sh-title"><div class="eyebrow">'+eyebrow+'</div>'+title+'<div class="nm">'+sub+'</div></div>'+closeBtn+'</div>';}
 function selectZone(z,fly){
   clearRoll(); selZone=z; setRail(z);
+  const zi=ROLLS.filter(q=>q.z===z);
   sheet.style.setProperty('--zc',css(ZCOL[z.id]));
-  sheet.innerHTML='<div class="sh-head"><span class="ztag">'+z.id+'</span><div class="sh-title"><div class="eyebrow">Zone '+z.id+'</div><div style="font-size:17px;font-weight:600">'+z.name+'</div><div class="nm">'+z.th+'</div></div>'+closeBtn+'</div>'+
-    zoneRows(z)+'<div class="sec"><div class="note">คลิกที่ลูกกลิ้งในภาพ 3D เพื่อดูรายละเอียดทีละลูก</div></div>';
-  sheet.dataset.open='true'; $('#closeSheet').onclick=closeSheet;
+  sheet.innerHTML=zoneHead(z,'Zone '+z.id+' · '+z.count+' ลูก','<div style="font-size:17px;font-weight:600">'+z.name+'</div>',z.th)+
+    stats(z)+
+    '<div class="sec"><div class="pickhead"><span class="eyebrow">เลือกลูกกลิ้ง</span><span class="note">ตามทิศทางการไหลของ slab →</span></div>'+
+    '<div class="chips" role="list">'+zi.map(r=>'<button class="chip" role="listitem" data-i="'+r.i+'">'+r.id.replace('#','')+'</button>').join('')+'</div></div>'+
+    '<details class="sec"><summary>สเปกทั้งหมดของโซน</summary>'+zoneRows(z)+'</details>';
+  sheet.dataset.open='true'; sheet.scrollTop=0; $('#closeSheet').onclick=closeSheet;
+  sheet.querySelectorAll('.chip').forEach(c=>{
+    const r=ROLLS[+c.dataset.i];
+    c.onclick=()=>selectRoll(r,true);
+    c.onpointerenter=e=>{if(e.pointerType==='mouse'&&r!==selRoll) r.mesh.material=mats['z'+r.z.id];};
+    c.onpointerleave=()=>{if(r!==selRoll) r.mesh.material=mats.steel;};
+  });
   if(fly) focusZone(z);
 }
 function clearRoll(){ if(selRoll){selRoll.mesh.material=mats.steel; selRoll.lbl.element.classList.remove('sel'); selRoll=null;} }
@@ -469,14 +505,22 @@ function selectRoll(r,fly){
   const z=r.z, zi=ROLLS.filter(q=>q.z===z), k=zi.indexOf(r);
   const fromMill=r.x-millX;
   sheet.style.setProperty('--zc',css(ZCOL[z.id]));
-  sheet.innerHTML='<div class="sh-head"><span class="ztag">'+z.id+'</span><div class="sh-title"><div class="eyebrow">Table roll · Zone '+z.id+'</div><div class="big">'+r.id+'</div><div class="nm">'+z.name+(r.side?' · '+(r.side==='entry'?'ฝั่งขาเข้า':'ฝั่งขาออก'):'')+'</div></div>'+closeBtn+'</div>'+
-    '<dl><dt>ลำดับในโซน</dt><dd>'+(k+1)+' / '+zi.length+'</dd>'+
+  sheet.innerHTML='<button class="backlink" id="backZone">'+ico.back+'ลูกทั้งหมดใน Zone '+z.id+'</button>'+
+    zoneHead(z,'Table roll · Zone '+z.id,'<div class="big">'+r.id+'</div>',z.name+(r.side?' · '+(r.side==='entry'?'ฝั่งขาเข้า':'ฝั่งขาออก'):'')+' · ลูกที่ '+(k+1)+' จาก '+zi.length)+
+    stats(z,r)+
+    '<dl><dt>ประเภทลูก</dt><dd>'+z.type+'</dd>'+
+    '<dt>มอเตอร์</dt><dd>'+z.motor.replace(/\n/g,'<br>')+'</dd>'+
+    '<dt>Pitch</dt><dd>'+z.pitchTxt+'</dd>'+
+    (z.speed?'<dt>ความเร็วโต๊ะ</dt><dd>'+z.speed+'</dd>':'')+
+    '<dt>Top of table</dt><dd>FL+765</dd></dl>'+
+    '<div class="sec"><div class="eyebrow">ตำแหน่ง</div><dl>'+
     '<dt>ระยะจาก ℄ Mill</dt><dd>≈ '+fmt(fromMill)+' m</dd>'+
-    '<dt>ระยะจากลูก #1</dt><dd>≈ '+(r.x-ROLLS[0].x).toFixed(1)+' m</dd></dl>'+
-    '<div class="sec"><div class="eyebrow">สเปกของโซน</div>'+zoneRows(z)+'</div>'+
-    '<div class="navrow"><button class="btn2" id="prevR"'+(r.i===0?' disabled':'')+'><svg class="i" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>ลูกก่อนหน้า</button><button class="btn2" id="nextR"'+(r.i===ROLLS.length-1?' disabled':'')+'>ลูกถัดไป<svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button></div>';
-  sheet.dataset.open='true';
+    '<dt>ระยะจากลูก #1</dt><dd>≈ '+(r.x-ROLLS[0].x).toFixed(1)+' m</dd>'+
+    '<dt>Drawing</dt><dd>'+z.dwg+'</dd></dl>'+(z.warn?'<div class="warn">'+z.warn+'</div>':'')+'</div>'+
+    '<div class="navrow"><button class="btn2" id="prevR"'+(r.i===0?' disabled':'')+'>'+ico.back+'ลูกก่อนหน้า</button><button class="btn2" id="nextR"'+(r.i===ROLLS.length-1?' disabled':'')+'>ลูกถัดไป'+ico.next+'</button></div>';
+  sheet.dataset.open='true'; sheet.scrollTop=0;
   $('#closeSheet').onclick=closeSheet;
+  $('#backZone').onclick=()=>selectZone(z,true);
   $('#prevR').onclick=()=>selectRoll(ROLLS[r.i-1],true);
   $('#nextR').onclick=()=>selectRoll(ROLLS[r.i+1],true);
   if(fly) focusRoll(r);
