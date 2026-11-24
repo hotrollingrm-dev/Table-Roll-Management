@@ -1,0 +1,526 @@
+<title>Table Roll Layout 3D</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: full-bleed 3D canvas; floating glass rail (zones) left, toolbar top, detail sheet right/bottom */
+:root{
+  --bg:#E9ECEF; --scene:#E4E8EC; --floor:#D5DAE0; --grid:#C3CAD2;
+  --surface:rgba(255,255,255,.78); --surface-solid:#FFFFFF; --line:rgba(20,30,45,.10);
+  --fg:#16202B; --fg2:#566271; --fg3:#8A95A3;
+  --accent:#1F6FEB; --accent-ink:#FFFFFF;
+  --steel:#9AA4AF; --steel-dark:#5E6873; --frame:#3C4652; --motor:#2F5E8C;
+  --zA:#3B6FD8; --zB:#14957C; --zC:#7A5BD0; --zD:#D2691E; --zE:#1C93C4; --zF:#B04A7A;
+  --hl:#F2B705;
+  --font:"Noto Sans Thai","Thonburi",system-ui,sans-serif; --mono:"JetBrains Mono",ui-monospace,monospace;
+  --r:12px; --shadow:0 8px 30px rgba(16,24,40,.12),0 1px 2px rgba(16,24,40,.08);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0E1216; --scene:#11161B; --floor:#171D24; --grid:#252D36;
+  --surface:rgba(22,28,35,.78); --surface-solid:#161C23; --line:rgba(255,255,255,.08);
+  --fg:#E8EDF2; --fg2:#9AA6B3; --fg3:#66727F; --accent:#4C8DFF;
+  --steel:#AAB3BD; --steel-dark:#6C7682; --frame:#56616E; --motor:#3F78B0;
+  --shadow:0 8px 30px rgba(0,0,0,.45); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E1216; --scene:#11161B; --floor:#171D24; --grid:#252D36;
+  --surface:rgba(22,28,35,.78); --surface-solid:#161C23; --line:rgba(255,255,255,.08);
+  --fg:#E8EDF2; --fg2:#9AA6B3; --fg3:#66727F; --accent:#4C8DFF;
+  --steel:#AAB3BD; --steel-dark:#6C7682; --frame:#56616E; --motor:#3F78B0;
+  --shadow:0 8px 30px rgba(0,0,0,.45); color-scheme:dark}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:14px;overflow:hidden}
+#stage{position:fixed;inset:0}
+#stage canvas{display:block;outline:none}
+.glass{background:var(--surface);backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* top bar */
+.top{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));display:flex;gap:10px;align-items:center;pointer-events:none;z-index:5}
+.top>*{pointer-events:auto}
+.brand{padding:10px 14px;display:flex;flex-direction:column;gap:1px;min-width:0}
+.brand b{font-size:15px;font-weight:600;letter-spacing:.1px}
+.brand span{font-size:12px;color:var(--fg2)}
+.spacer{flex:1}
+.seg{display:flex;padding:4px;gap:2px}
+.seg button,.iconbtn{font:inherit;font-size:13px;color:var(--fg2);background:transparent;border:0;border-radius:8px;padding:0 12px;height:36px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.seg button:hover,.iconbtn:hover{color:var(--fg);background:var(--line)}
+.seg button[aria-pressed="true"]{background:var(--surface-solid);color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.search{display:flex;align-items:center;gap:6px;padding:4px 4px 4px 12px}
+.search input{font:inherit;font-family:var(--mono);font-size:13px;width:120px;height:36px;border:0;background:transparent;color:var(--fg);outline:none}
+.search input::placeholder{color:var(--fg3);font-family:var(--font)}
+.go{height:36px;padding:0 14px;border:0;border-radius:8px;background:var(--accent);color:var(--accent-ink);font:inherit;font-weight:600;font-size:13px;cursor:pointer}
+.go:active{transform:translateY(1px)}
+svg.i{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+
+/* zone rail */
+.rail{position:fixed;left:max(16px,env(safe-area-inset-left,0px));top:calc(80px + env(safe-area-inset-top,0px));width:300px;padding:8px;z-index:4;display:flex;flex-direction:column;gap:2px;max-height:calc(100% - 180px);overflow:auto}
+.rail h3{font-size:11px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--fg3);padding:8px 10px 6px;margin:0}
+.zone{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:9px 10px;border-radius:9px;border:0;background:transparent;color:var(--fg);font:inherit;text-align:left;cursor:pointer;width:100%}
+.zone:hover{background:var(--line)}
+.zone[aria-pressed="true"]{background:var(--surface-solid);box-shadow:0 1px 3px rgba(0,0,0,.10)}
+.ztag{width:34px;height:34px;border-radius:8px;display:grid;place-items:center;font-weight:700;font-size:15px;color:#fff;background:var(--zc)}
+.zone .nm{font-size:13.5px;font-weight:600;line-height:1.25}
+.zone .sub{font-size:12px;color:var(--fg2);font-family:var(--mono)}
+.zone .ct{font-family:var(--mono);font-size:13px;color:var(--fg2);text-align:right}
+.zone .ct small{display:block;font-size:10.5px;color:var(--fg3);font-family:var(--font)}
+.totals{display:flex;justify-content:space-between;padding:10px 10px 4px;border-top:1px solid var(--line);margin-top:6px;font-size:12px;color:var(--fg2)}
+.totals b{font-family:var(--mono);color:var(--fg);font-weight:500}
+
+/* toggles */
+.layers{position:fixed;left:max(16px,env(safe-area-inset-left,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));display:flex;gap:2px;padding:4px;z-index:4;flex-wrap:wrap}
+.layers button[aria-pressed="true"]{color:var(--fg)}
+.layers button .dot{width:8px;height:8px;border-radius:50%;background:var(--fg3)}
+.layers button[aria-pressed="true"] .dot{background:var(--accent)}
+
+/* detail sheet */
+.sheet{position:fixed;right:max(16px,env(safe-area-inset-right,0px));top:calc(80px + env(safe-area-inset-top,0px));width:340px;z-index:4;padding:16px;display:flex;flex-direction:column;gap:14px;max-height:calc(100% - 110px);overflow:auto;transition:opacity .2s,transform .25s cubic-bezier(.2,.8,.2,1)}
+.sheet[data-open="false"]{opacity:0;transform:translateX(12px);pointer-events:none}
+.sh-head{display:flex;gap:12px;align-items:flex-start}
+.sh-head .ztag{width:44px;height:44px;font-size:18px;border-radius:10px}
+.sh-title{flex:1;min-width:0}
+.eyebrow{font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--fg3);font-weight:600}
+.big{font-family:var(--mono);font-size:28px;font-weight:500;line-height:1.1;letter-spacing:-.5px}
+.sh-title .nm{font-size:13px;color:var(--fg2);margin-top:2px}
+.close{width:36px;height:36px;justify-content:center;padding:0}
+dl{display:grid;grid-template-columns:auto 1fr;gap:8px 14px;margin:0;font-size:13px}
+dt{color:var(--fg2)}
+dd{margin:0;text-align:right;font-family:var(--mono);font-size:12.5px}
+.sec{border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:8px}
+.navrow{display:flex;gap:8px}
+.btn2{flex:1;height:40px;border-radius:9px;border:1px solid var(--line);background:var(--surface-solid);color:var(--fg);font:inherit;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn2:hover{border-color:var(--fg3)}
+.btn2:disabled{opacity:.4;cursor:default}
+.note{font-size:12px;color:var(--fg3);line-height:1.5}
+
+/* labels in 3D */
+.lbl{font-family:var(--font);font-size:12px;font-weight:600;color:var(--fg);background:var(--surface);border:1px solid var(--line);backdrop-filter:blur(8px);padding:4px 9px;border-radius:7px;white-space:nowrap;display:flex;align-items:center;gap:7px;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.lbl i{width:18px;height:18px;border-radius:5px;background:var(--zc);color:#fff;font-style:normal;font-size:11px;display:grid;place-items:center}
+.lbl.minor{font-weight:500;font-size:11px;color:var(--fg2)}
+.lbl.sel{background:var(--hl);color:#1A1400;border-color:transparent;font-family:var(--mono)}
+.lbl.rn{font-family:var(--mono);font-size:10px;font-weight:500;padding:1px 5px;border-radius:4px;color:var(--fg2)}
+.labels-off .lbl.rn{display:none}
+
+.tip{position:fixed;z-index:6;pointer-events:none;font-family:var(--mono);font-size:12px;padding:5px 8px;border-radius:6px;background:var(--fg);color:var(--bg);transform:translate(12px,12px);white-space:nowrap}
+.flow{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:3;padding:8px 12px;font-size:12px;color:var(--fg2);display:flex;gap:8px;align-items:center}
+.loading{position:fixed;inset:0;display:grid;place-items:center;z-index:9;background:var(--bg);color:var(--fg2);font-size:14px;transition:opacity .4s}
+.loading.done{opacity:0;pointer-events:none}
+.err{color:#C0392B}
+.warn{font-size:12px;line-height:1.5;padding:10px 12px;border-radius:9px;background:color-mix(in srgb,#E0A100 14%,transparent);color:var(--fg);border:1px solid color-mix(in srgb,#E0A100 40%,transparent);margin-top:10px}
+
+@media (max-width:860px){
+  .brand span{display:none}
+  .rail{top:auto;bottom:calc(64px + env(safe-area-inset-bottom,0px));left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));width:auto;flex-direction:row;overflow-x:auto;max-height:none;padding:6px}
+  .rail h3,.totals,.zone .nm,.zone .ct small{display:none}
+  .zone{grid-template-columns:34px auto;width:auto;flex:0 0 auto;padding:6px 10px 6px 6px}
+  .zone .ct{display:none}
+  .layers{bottom:calc(16px + env(safe-area-inset-bottom,0px));right:max(16px,env(safe-area-inset-right,0px));justify-content:space-between;overflow-x:auto;flex-wrap:nowrap}
+  .flow{display:none}
+  .sheet{top:auto;left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));bottom:calc(128px + env(safe-area-inset-bottom,0px));width:auto;max-height:46%}
+  .sheet[data-open="false"]{transform:translateY(12px)}
+  .top{flex-wrap:wrap}
+  .views{order:3;width:100%;justify-content:space-between}
+  .views button{flex:1;justify-content:center;padding:0 6px}
+  .search input{width:84px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div id="stage" aria-label="3D layout ของ table roll โซน A ถึง F"></div>
+<div class="loading" id="loading">กำลังโหลดโมเดล 3D…</div>
+
+<header class="top">
+  <div class="brand glass"><b>Table Roll Layout</b><span>Aluminum Hot Rolling Mill · ไลน์ R-Mill ถึง Shear</span></div>
+  <div class="seg glass views" role="group" aria-label="มุมมอง">
+    <button data-view="iso" aria-pressed="true"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/></svg>ภาพรวม</button>
+    <button data-view="top"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 12h16"/></svg>ด้านบน</button>
+    <button data-view="side"><svg class="i" viewBox="0 0 24 24"><path d="M3 15h18M6 15v4M18 15v4"/><circle cx="8" cy="12" r="2"/><circle cx="16" cy="12" r="2"/></svg>ด้านข้าง</button>
+  </div>
+  <div class="spacer"></div>
+  <form class="search glass" id="searchForm" role="search">
+    <svg class="i" viewBox="0 0 24 24" style="color:var(--fg3)"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>
+    <label for="q" style="position:absolute;left:-9999px">ค้นหาเลขลูกกลิ้ง</label>
+    <input id="q" placeholder="เลขลูก เช่น 152" autocomplete="off" inputmode="text">
+    <button class="go" type="submit">ไป</button>
+  </form>
+</header>
+
+<nav class="rail glass" id="rail" aria-label="โซน">
+  <h3>โซนตามทิศทางการไหลของ slab</h3>
+</nav>
+
+<div class="layers glass" role="group" aria-label="ชั้นข้อมูล">
+  <button class="iconbtn" data-layer="motors" aria-pressed="true"><span class="dot"></span>มอเตอร์</button>
+  <button class="iconbtn" data-layer="frames" aria-pressed="true"><span class="dot"></span>โครงสร้าง</button>
+  <button class="iconbtn" data-layer="labels" aria-pressed="false"><span class="dot"></span>เลขลูกกลิ้ง</button>
+  <button class="iconbtn" data-layer="sim" aria-pressed="false"><span class="dot"></span>จำลอง slab</button>
+</div>
+
+<aside class="sheet glass" id="sheet" data-open="false" aria-live="polite"></aside>
+<div class="flow glass"><svg class="i" viewBox="0 0 24 24"><path d="M4 12h16M14 6l6 6-6 6"/></svg>Material travel A → B → C → Mill → E → F → Shear</div>
+<div class="tip" id="tip" hidden></div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/renderers/CSS2DRenderer.js"></script>
+<script>
+(function(){
+const $=s=>document.querySelector(s);
+if(!window.THREE||!THREE.OrbitControls){ $('#loading').innerHTML='<span class="err">โหลดไลบรารี 3D ไม่สำเร็จ ลองรีเฟรชหน้าอีกครั้ง</span>'; return; }
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+/* ---------- Data from GA drawings (dimensions in metres; positions approximate) ---------- */
+const TOP=0.765;              // top of table FL+765
+const ZONES=[
+ {id:'A',name:'Mill Approach Table',th:'โต๊ะลูกกลิ้งนำเข้า',dwg:'LM-B52694',doc:'M826D50019',count:95,first:1,pitch:0.915,dEnd:0.300,dMid:0.262,len:2.50,
+  motor:'AC 3.7 kW × 0/325/420 rpm',motorN:'95 ชุด (1 ลูก/1 มอเตอร์)',type:'Double tapered',pitchTxt:'915 mm (ส่วนใหญ่)'},
+ {id:'B',name:'Slab Receiving Table',th:'โต๊ะรับ slab',dwg:'LM-B52695',doc:'M826D50020',count:51,first:96,pitch:0.66,dEnd:0.347,dMid:0.300,len:2.54,
+  motor:'AC 11 kW × 0/235/300 rpm',motorN:'51 ชุด',type:'Double tapered',pitchTxt:'610 / 767.5 / 915 mm'},
+ {id:'C',name:'R-Mill Entry Table',th:'โต๊ะขาเข้า Roughing Mill',dwg:'LM-B52696',doc:'M826D50021',count:17,first:147,pitch:0.50,dEnd:0.347,dMid:0.255,len:2.54,
+  motor:'16 × 18.5 kW AC 0/200/255 rpm\n1 × 11 kW AC 0/235/300 rpm',motorN:'17 ชุด (geared motor)',type:'Double tapered · slope 1:25',pitchTxt:'≈500 mm'},
+ {id:'D',name:'Roughing Mill Feed Roller Table',th:'ลูกกลิ้งป้อนในแท่น Mill',dwg:'M171B50790',doc:'—',count:8,first:null,pitch:0.455,dEnd:0.417,dMid:0.397,len:2.40,
+  motor:'AC 110 kW × 990/1260 rpm · gear i=1/5.444',motorN:'ขาเข้า 4 · ขาออก 4',type:'Slope 1/40 · max Ø417 / std Ø397',pitchTxt:'455 mm',speed:'278 m/min (Ø382)'},
+ {id:'E',name:'R-Mill Delivery Table',th:'โต๊ะขาออก Roughing Mill',dwg:'1314020970 1D',doc:'M826D50022',count:18,first:172,pitch:0.50,dEnd:0.367,dMid:0.322,len:2.50,
+  motor:'18 × 18.5 kW AC 0/200/255 rpm',motorN:'18 ชุด (geared motor)',type:'Double tapered · slope 1:31',pitchTxt:'500 mm'},
+ {id:'F',name:'150mm Shear Entry Table',th:'โต๊ะขาเข้า Shear 150 mm',dwg:'LM-B52700',doc:'M826D50023',count:50,first:190,pitch:0.61,dEnd:0.347,dMid:0.255,len:2.54,
+  motor:'AC 11 kW × 0/235/300 rpm',motorN:'สเปกในแบบระบุ 40 ชุด',type:'Double tapered',pitchTxt:'610 mm',
+  warn:'แบบ GA แสดงเลขลูก #190–#239 (50 ตำแหน่ง) แต่ตารางสเปกระบุ 40 ลูก / 40 มอเตอร์ ควรตรวจสอบหน้างาน'}
+];
+const ZCOL={A:'--zA',B:'--zB',C:'--zC',D:'--zD',E:'--zE',F:'--zF'};
+
+// Lay out rolls along x (material travel), z across (−z drive side, +z work side)
+const ROLLS=[]; let x=0;
+const A=ZONES[0],B=ZONES[1],C=ZONES[2],D=ZONES[3],E=ZONES[4],F=ZONES[5];
+for(let i=0;i<A.count;i++){ROLLS.push({z:A,id:'#'+(A.first+i),x});x+=A.pitch;}
+A.x0=0;A.x1=x-A.pitch; x+=0.3; B.x0=x;
+for(let i=0;i<B.count;i++){ROLLS.push({z:B,id:'#'+(B.first+i),x});x+=B.pitch;}
+B.x1=x-B.pitch;
+const EDGER=B.x1+2.6; C.x0=EDGER+1.5; x=C.x0;
+for(let i=0;i<C.count;i++){ROLLS.push({z:C,id:'#'+(C.first+i),x});x+=C.pitch;}
+C.x1=x-C.pitch;
+const MILL=C.x1+2.9;
+const dPos=[-2.04,-1.585,-1.13,-0.675,0.675,1.13,1.585,2.04];
+dPos.forEach((o,i)=>ROLLS.push({z:D,id:i<4?'D-EN'+(4-i):'D-DL'+(i-3),x:MILL+o,side:i<4?'entry':'delivery'}));
+D.x0=MILL-2.04;D.x1=MILL+2.04;
+E.x0=MILL+2.9;x=E.x0;
+for(let i=0;i<E.count;i++){ROLLS.push({z:E,id:'#'+(E.first+i),x});x+=E.pitch;}
+E.x1=x-E.pitch; F.x0=E.x1+1.2; x=F.x0;
+for(let i=0;i<F.count;i++){ROLLS.push({z:F,id:'#'+(F.first+i),x});x+=F.pitch;}
+F.x1=x-F.pitch; let SHEAR=F.x1+0.55;
+const LEN=SHEAR+3; const MID=LEN/2;
+ROLLS.forEach((r,i)=>{r.i=i;r.x-=MID;});
+ZONES.forEach(z=>{z.x0-=MID;z.x1-=MID;});
+const millX=MILL-MID, edgerX=EDGER-MID; SHEAR-=MID;
+
+/* ---------- Scene ---------- */
+const stage=$('#stage');
+const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.outputEncoding=THREE.sRGBEncoding;
+stage.appendChild(renderer.domElement);
+const lr=new THREE.CSS2DRenderer(); lr.domElement.style.cssText='position:absolute;inset:0;pointer-events:none';
+stage.appendChild(lr.domElement); stage.classList.add('labels-off');
+
+const scene=new THREE.Scene();
+const cam=new THREE.PerspectiveCamera(40,1,0.1,2000);
+const ctl=new THREE.OrbitControls(cam,renderer.domElement);
+ctl.enableDamping=true; ctl.dampingFactor=.08; ctl.maxPolarAngle=Math.PI*0.495; ctl.minDistance=3; ctl.maxDistance=320; ctl.screenSpacePanning=true;
+
+const hemi=new THREE.HemisphereLight(0xffffff,0x8090a0,.75); scene.add(hemi);
+const sun=new THREE.DirectionalLight(0xffffff,.9); sun.position.set(-30,60,40); sun.castShadow=true;
+sun.shadow.mapSize.set(4096,1024); const sc=sun.shadow.camera; sc.left=-100;sc.right=100;sc.top=20;sc.bottom=-20;sc.near=1;sc.far=200; scene.add(sun); scene.add(sun.target);
+const fill=new THREE.DirectionalLight(0xffffff,.25); fill.position.set(40,20,-30); scene.add(fill);
+
+const M=(c,o={})=>new THREE.MeshStandardMaterial(Object.assign({color:c,metalness:.35,roughness:.55},o));
+const mats={};
+function themeMats(){
+  scene.background=new THREE.Color(css('--scene')).convertSRGBToLinear();
+  const set=(k,c,o)=>{ if(!mats[k]) mats[k]=M(c,o); mats[k].color.set(c).convertSRGBToLinear(); if(mats[k].emissive&&k==='hl') mats[k].emissive.set(c).convertSRGBToLinear(); };
+  set('floor',css('--floor'),{metalness:0,roughness:1});
+  set('steel',css('--steel'),{metalness:.75,roughness:.32});
+  set('steelDark',css('--steel-dark'),{metalness:.6,roughness:.45});
+  set('frame',css('--frame'),{metalness:.3,roughness:.7});
+  set('motor',css('--motor'),{metalness:.3,roughness:.5});
+  set('pit',css('--grid'),{metalness:0,roughness:1});
+  set('hl',css('--hl'),{metalness:.4,roughness:.35,emissive:new THREE.Color(css('--hl')),emissiveIntensity:.35});
+  set('slab',0xC9CDD2,{metalness:.85,roughness:.25});
+  ZONES.forEach(z=>set('z'+z.id,css(ZCOL[z.id]),{metalness:.2,roughness:.6}));
+  if(grid){grid.material.color.set(css('--grid')).convertSRGBToLinear();}
+}
+let grid=null;
+themeMats();
+
+const groups={motors:new THREE.Group(),frames:new THREE.Group()};
+scene.add(groups.motors,groups.frames);
+const box=(w,h,d,m,x,y,z,g)=>{const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);o.castShadow=o.receiveShadow=true;(g||scene).add(o);return o;};
+const cyl=(r,h,m,x,y,z,axis,g,seg=24)=>{const o=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,seg),m);o.position.set(x,y,z);if(axis==='z')o.rotation.x=Math.PI/2;if(axis==='x')o.rotation.z=Math.PI/2;o.castShadow=true;(g||scene).add(o);return o;};
+
+// floor with mill pit
+const fW=14, gapL=millX-5, gapR=millX+5;
+const fl1=new THREE.Mesh(new THREE.PlaneGeometry(gapL-(-MID-20),fW*2),mats.floor); fl1.rotation.x=-Math.PI/2; fl1.position.set((gapL+(-MID-20))/2,0,0); fl1.receiveShadow=true; scene.add(fl1);
+const fl2=new THREE.Mesh(new THREE.PlaneGeometry((MID+20)-gapR,fW*2),mats.floor); fl2.rotation.x=-Math.PI/2; fl2.position.set((gapR+MID+20)/2,0,0); fl2.receiveShadow=true; scene.add(fl2);
+[[-1,1],[1,1]].forEach(([s])=>{const f=new THREE.Mesh(new THREE.PlaneGeometry(10,fW-3.5),mats.floor);f.rotation.x=-Math.PI/2;f.position.set(millX,0,s*(3.5+(fW-3.5)/2));f.receiveShadow=true;scene.add(f);});
+box(10,0.05,7,mats.pit,millX,-2.6,0); box(10,2.6,0.05,mats.pit,millX,-1.3,-3.5); box(10,2.6,0.05,mats.pit,millX,-1.3,3.5);
+grid=new THREE.GridHelper(LEN+40,Math.round((LEN+40)/5),0,0); grid.material=new THREE.LineBasicMaterial({color:css('--grid'),transparent:true,opacity:.55}); grid.position.y=0.005; scene.add(grid);
+
+// roll geometries per zone (double tapered profile)
+function rollGeo(z){
+  const L=z.len, rE=z.dEnd/2, rM=z.dMid/2, pts=[];
+  const n=16;
+  pts.push(new THREE.Vector2(0.001,-L/2-0.25));
+  pts.push(new THREE.Vector2(0.06,-L/2-0.25));
+  pts.push(new THREE.Vector2(0.06,-L/2));
+  pts.push(new THREE.Vector2(rE*0.9,-L/2));
+  for(let i=0;i<=n;i++){const t=i/n, y=-L/2+t*L, k=Math.abs(t-.5)*2; pts.push(new THREE.Vector2(rM+(rE-rM)*Math.pow(k,1.1),y));}
+  pts.push(new THREE.Vector2(rE*0.9,L/2)); pts.push(new THREE.Vector2(0.06,L/2)); pts.push(new THREE.Vector2(0.06,L/2+0.25)); pts.push(new THREE.Vector2(0.001,L/2+0.25));
+  const g=new THREE.LatheGeometry(pts,28); g.rotateX(Math.PI/2); return g;
+}
+const geos={}; ZONES.forEach(z=>geos[z.id]=rollGeo(z));
+const chockGeo=new THREE.BoxGeometry(0.26,0.30,0.22);
+
+const rollMeshes=[];
+ROLLS.forEach(r=>{
+  const z=r.z, y=TOP-z.dEnd/2;
+  const m=new THREE.Mesh(geos[z.id],mats.steel); m.position.set(r.x,y,0); m.castShadow=true; m.receiveShadow=true;
+  m.userData.roll=r; r.mesh=m; r.y=y; scene.add(m); rollMeshes.push(m);
+  [-1,1].forEach(s=>{const c=new THREE.Mesh(chockGeo,mats.steelDark);c.position.set(r.x,y,s*(z.len/2+0.2));c.castShadow=true;groups.frames.add(c);});
+  if(z.id!=='D'){ // individual drives on work side (+z) per GA
+    const mz=z.len/2+0.75, mr=z.id==='A'?0.13:0.19, ml=z.id==='A'?0.45:0.62;
+    cyl(0.04,0.5,mats.steelDark,r.x,y,z.len/2+0.45,'z',groups.motors,10);
+    cyl(mr,ml,mats.motor,r.x,y,mz+ml/2,'z',groups.motors,18);
+    box(mr*2.2,y-mr+0.02,ml+0.1,mats.frame,r.x,(y-mr)/2,mz+ml/2,groups.motors);
+  }
+  const l=document.createElement('div'); l.className='lbl rn'; l.textContent=r.id.replace('#','');
+  const o=new THREE.CSS2DObject(l); o.position.set(r.x,TOP+0.35,-z.len/2-0.6); scene.add(o); r.lbl=o;
+});
+
+// side frames per zone
+ZONES.forEach(z=>{
+  if(z.id==='D') return;
+  const L=z.x1-z.x0+0.8, cx=(z.x0+z.x1)/2;
+  [-1,1].forEach(s=>{
+    box(L,0.32,0.36,mats.frame,cx,TOP-0.55,s*(z.len/2+0.2),groups.frames);
+    box(L,0.06,0.08,mats['z'+z.id],cx,TOP-0.37,s*(z.len/2+0.2+0.19),groups.frames); // zone colour strip, drive/work side
+  });
+  box(L,0.12,z.len+0.6,mats.frame,cx,0.06,0,groups.frames);
+  const legs=Math.max(2,Math.round(L/3));
+  for(let i=0;i<=legs;i++){const lx=z.x0-0.4+L*i/legs;[-1,1].forEach(s=>box(0.22,TOP-0.7,0.22,mats.frame,lx,(TOP-0.7)/2+0.1,s*(z.len/2+0.2),groups.frames));}
+  // zone floor band
+  const band=new THREE.Mesh(new THREE.PlaneGeometry(L,0.25),mats['z'+z.id]); band.rotation.x=-Math.PI/2; band.position.set(cx,0.01,-(z.len/2+1.3)); scene.add(band);
+});
+
+// Roughing mill stand (D)
+(function(){
+  const g=new THREE.Group(); scene.add(g);
+  const H=9.5, hz=2.15;
+  [-1,1].forEach(s=>{
+    [-1,1].forEach(f=>box(0.75,H+2.6,1.0,mats.frame,millX+f*1.05,(H-2.6)/2,s*hz,g));
+    box(2.85,1.2,1.0,mats.frame,millX,H-0.6,s*hz,g);
+    box(2.85,0.9,1.0,mats.frame,millX,-2.15,s*hz,g);
+  });
+  // work rolls Ø1050 max, backup Ø1600 max
+  const wr=0.525, br=0.8;
+  const tw=TOP+0.08+wr, bw=TOP-0.08-wr;
+  cyl(wr,2.9,mats.steel,millX,tw,0,'z',g,40); cyl(wr,2.9,mats.steel,millX,bw,0,'z',g,40);
+  cyl(br,2.9,mats.steelDark,millX,tw+wr+br,0,'z',g,48); cyl(br,2.9,mats.steelDark,millX,bw-wr-br,0,'z',g,48);
+  // spindles & main drive on drive side
+  cyl(0.22,4.5,mats.steelDark,millX,tw,-(1.45+2.25),'z',g); cyl(0.22,4.5,mats.steelDark,millX,bw,-(1.45+2.25),'z',g);
+  box(2.2,2.6,2.2,mats.motor,millX,1.2,-7.2,g);
+  // feed table drive motors (110 kW, one per side)
+  [-1,1].forEach(s=>{const mx=millX+s*1.36; box(1.6,0.9,1.2,mats.motor,mx,TOP-0.25,3.2,groups.motors); cyl(0.05,1.6,mats.steelDark,mx,TOP-0.2,2.1,'z',groups.motors);});
+  box(4.6,0.25,2.8,mats['zD'],millX,TOP-0.55,0,groups.frames);
+})();
+
+// Edger (vertical rolls)
+(function(){
+  const g=new THREE.Group(); scene.add(g);
+  [-1,1].forEach(s=>{cyl(0.5,1.6,mats.steel,edgerX,TOP+0.4,s*1.15,'y',g,36); box(1.6,4.2,0.9,mats.frame,edgerX,2.1,s*2.1,g);});
+  box(1.6,0.8,5.1,mats.frame,edgerX,4.6,0,g);
+})();
+
+// 150 mm shear (end of F)
+(function(){const g=new THREE.Group();scene.add(g);
+  [-1,1].forEach(s=>box(0.9,5.2,0.8,mats.frame,SHEAR+0.6,2.4,s*2.0,g));
+  box(0.9,1.0,4.8,mats.frame,SHEAR+0.6,5.2,0); box(0.5,0.5,3.0,mats.steelDark,SHEAR+0.6,TOP+1.2,0,g);
+  const d=document.createElement('div');d.className='lbl minor';d.textContent='150 mm Shear';const o=new THREE.CSS2DObject(d);o.position.set(SHEAR+0.6,6.2,0);scene.add(o);})();
+// Reference markers from drawings
+function marker(x,text,cls){const d=document.createElement('div');d.className='lbl minor'+(cls?' '+cls:'');d.textContent=text;const o=new THREE.CSS2DObject(d);o.position.set(x,TOP+1.0,2.9);scene.add(o);
+  const p=new THREE.Mesh(new THREE.BoxGeometry(0.04,1.0,0.04),mats.frame);p.position.set(x,TOP+0.5,2.4);scene.add(p);}
+const rx=id=>ROLLS.find(r=>r.id===id).x;
+marker((rx('#111')+rx('#112'))/2,'Slab charging point');
+marker((rx('#126')+rx('#127'))/2,'Slab cleaning device');
+// zone labels
+ZONES.forEach(z=>{
+  const d=document.createElement('div'); d.className='lbl'; d.style.setProperty('--zc',css(ZCOL[z.id]));
+  d.innerHTML='<i>'+z.id+'</i>'+z.name; const o=new THREE.CSS2DObject(d);
+  const LY={A:2.2,B:2.2,C:4.2,D:11.5,E:4.2,F:2.2}, LZ={A:-2.2,B:-2.2,C:-2.2,D:0,E:-2.2,F:-2.2};
+  o.position.set((z.x0+z.x1)/2,TOP+LY[z.id],LZ[z.id]); scene.add(o); z.lbl=d;
+});
+[['Edger',edgerX,6],['℄ Roughing Mill',millX,10.2]].forEach(([t,xx,yy])=>{if(t==='Edger'){const d=document.createElement('div');d.className='lbl minor';d.textContent=t;const o=new THREE.CSS2DObject(d);o.position.set(xx,yy,0);scene.add(o);}});
+// side labels
+[['DRIVE SIDE',-1],['WORK SIDE',1]].forEach(([t,s])=>{const d=document.createElement('div');d.className='lbl minor';d.textContent=t;const o=new THREE.CSS2DObject(d);o.position.set(-MID-3,0.2,s*3.2);scene.add(o);});
+
+// flow arrows on floor
+for(let i=0;i<Math.floor(LEN/12);i++){const s=new THREE.Shape();s.moveTo(0,0.25);s.lineTo(0.6,0);s.lineTo(0,-0.25);s.lineTo(0.15,0);s.lineTo(0,0.25);
+  const m=new THREE.Mesh(new THREE.ShapeGeometry(s),mats.pit);m.rotation.x=-Math.PI/2;m.position.set(-MID+6+i*12,0.012,-3.6);scene.add(m);}
+
+// slab simulation
+const slab=box(5.5,0.45,1.9,mats.slab,-MID-6,TOP+0.225,0); slab.visible=false;
+
+/* ---------- Camera helpers ---------- */
+let fly=null;
+const lod=[]; // labels that only appear when the camera is close enough
+scene.traverse(o=>{ if(o.isCSS2DObject && !o.element.classList.contains('rn')){ const t=o.element.textContent; const near=o.element.classList.contains('minor')&&!/SIDE/.test(t) || /R-Mill (Entry|Delivery)/.test(t); if(near) lod.push(o);} });
+function flyTo(target,pos,ms=900){
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  fly={t0:performance.now(),ms:reduce?1:ms,fp:cam.position.clone(),ft:ctl.target.clone(),tp:pos.clone(),tt:target.clone()};
+}
+const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+function view(v){
+  document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.view===v));
+  const asp=stage.clientWidth/stage.clientHeight, far=(LEN/2+10)/Math.tan(THREE.MathUtils.degToRad(cam.fov/2))/Math.max(asp,.5);
+  if(v==='iso') flyTo(new THREE.Vector3(8,0,0),isoPos());
+  if(v==='top') flyTo(new THREE.Vector3(0,0,0),new THREE.Vector3(0,far*0.95,0.01));
+  if(v==='side') flyTo(new THREE.Vector3(0,2,0),new THREE.Vector3(0,3,far*0.9));
+}
+function isoPos(){const asp=Math.max(stage.clientWidth/stage.clientHeight,.6);const d=(LEN*0.44)/Math.tan(THREE.MathUtils.degToRad(cam.fov/2))/asp;return new THREE.Vector3(8-d*0.18,d*0.42,d*0.62);}
+function focusZone(z){
+  const L=Math.max(z.x1-z.x0,8), c=new THREE.Vector3((z.x0+z.x1)/2,TOP,0);
+  const d=L*0.75+6;
+  flyTo(c,c.clone().add(new THREE.Vector3(-d*0.35,d*0.45,d*0.7)));
+}
+function focusRoll(r){
+  const c=new THREE.Vector3(r.x,TOP,0);
+  flyTo(c,c.clone().add(new THREE.Vector3(-3.2,3.4,5.6)));
+}
+
+/* ---------- UI ---------- */
+const rail=$('#rail');
+ZONES.forEach(z=>{
+  const b=document.createElement('button'); b.className='zone'; b.dataset.zone=z.id; b.setAttribute('aria-pressed','false');
+  b.style.setProperty('--zc',css(ZCOL[z.id]));
+  const rng=z.first?('#'+z.first+'–#'+(z.first+z.count-1)):'ENT 4 · DEL 4';
+  b.innerHTML='<span class="ztag">'+z.id+'</span><span><div class="nm">'+z.name+'</div><div class="sub">'+rng+'</div></span><span class="ct">'+z.count+'<small>ลูก</small></span>';
+  b.onclick=()=>selectZone(z,true); rail.appendChild(b);
+});
+const tot=document.createElement('div'); tot.className='totals';
+tot.innerHTML='<span>รวมทั้งไลน์</span><span><b>'+ROLLS.length+'</b> ลูก · ยาว ≈ <b>'+Math.round(LEN)+'</b> m</span>'; rail.appendChild(tot);
+
+const sheet=$('#sheet');
+let selZone=null, selRoll=null, selLbl=null;
+const fmt=n=>(n>=0?'+':'')+n.toFixed(2);
+function setRail(z){document.querySelectorAll('.zone').forEach(b=>b.setAttribute('aria-pressed',z&&b.dataset.zone===z.id));}
+function zoneRows(z){return '<dl>'+
+  '<dt>ประเภทลูก</dt><dd>'+z.type+'</dd>'+
+  '<dt>จำนวน</dt><dd>'+z.count+' ลูก</dd>'+
+  '<dt>Pitch</dt><dd>'+z.pitchTxt+'</dd>'+
+  '<dt>Ø ปลาย / กลาง</dt><dd>'+Math.round(z.dEnd*1000)+' / '+Math.round(z.dMid*1000)+' mm</dd>'+
+  '<dt>ความยาว body</dt><dd>≈'+Math.round(z.len*1000)+' mm</dd>'+
+  '<dt>มอเตอร์</dt><dd>'+z.motor.replace(/\n/g,'<br>')+'</dd>'+
+  '<dt>ชุดขับ</dt><dd>'+z.motorN+'</dd>'+
+  (z.speed?'<dt>ความเร็วโต๊ะ</dt><dd>'+z.speed+'</dd>':'')+
+  '<dt>Top of table</dt><dd>FL+765</dd>'+
+  '<dt>Drawing</dt><dd>'+z.dwg+'</dd>'+
+  (z.doc!=='—'?'<dt>Document</dt><dd>'+z.doc+'</dd>':'')+'</dl>'+(z.warn?'<div class="warn">'+z.warn+'</div>':'');}
+const closeBtn='<button class="iconbtn close" id="closeSheet" aria-label="ปิด"><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>';
+function selectZone(z,fly){
+  clearRoll(); selZone=z; setRail(z);
+  sheet.style.setProperty('--zc',css(ZCOL[z.id]));
+  sheet.innerHTML='<div class="sh-head"><span class="ztag">'+z.id+'</span><div class="sh-title"><div class="eyebrow">Zone '+z.id+'</div><div style="font-size:17px;font-weight:600">'+z.name+'</div><div class="nm">'+z.th+'</div></div>'+closeBtn+'</div>'+
+    zoneRows(z)+'<div class="sec"><div class="note">คลิกที่ลูกกลิ้งในภาพ 3D เพื่อดูรายละเอียดทีละลูก</div></div>';
+  sheet.dataset.open='true'; $('#closeSheet').onclick=closeSheet;
+  if(fly) focusZone(z);
+}
+function clearRoll(){ if(selRoll){selRoll.mesh.material=mats.steel; selRoll.lbl.element.classList.remove('sel'); selRoll=null;} }
+function selectRoll(r,fly){
+  clearRoll(); selRoll=r; selZone=r.z; setRail(r.z);
+  r.mesh.material=mats.hl; r.lbl.element.classList.add('sel'); r.lbl.element.textContent=r.id;
+  const z=r.z, zi=ROLLS.filter(q=>q.z===z), k=zi.indexOf(r);
+  const fromMill=r.x-millX;
+  sheet.style.setProperty('--zc',css(ZCOL[z.id]));
+  sheet.innerHTML='<div class="sh-head"><span class="ztag">'+z.id+'</span><div class="sh-title"><div class="eyebrow">Table roll · Zone '+z.id+'</div><div class="big">'+r.id+'</div><div class="nm">'+z.name+(r.side?' · '+(r.side==='entry'?'ฝั่งขาเข้า':'ฝั่งขาออก'):'')+'</div></div>'+closeBtn+'</div>'+
+    '<dl><dt>ลำดับในโซน</dt><dd>'+(k+1)+' / '+zi.length+'</dd>'+
+    '<dt>ระยะจาก ℄ Mill</dt><dd>≈ '+fmt(fromMill)+' m</dd>'+
+    '<dt>ระยะจากลูก #1</dt><dd>≈ '+(r.x-ROLLS[0].x).toFixed(1)+' m</dd></dl>'+
+    '<div class="sec"><div class="eyebrow">สเปกของโซน</div>'+zoneRows(z)+'</div>'+
+    '<div class="navrow"><button class="btn2" id="prevR"'+(r.i===0?' disabled':'')+'><svg class="i" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>ลูกก่อนหน้า</button><button class="btn2" id="nextR"'+(r.i===ROLLS.length-1?' disabled':'')+'>ลูกถัดไป<svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button></div>';
+  sheet.dataset.open='true';
+  $('#closeSheet').onclick=closeSheet;
+  $('#prevR').onclick=()=>selectRoll(ROLLS[r.i-1],true);
+  $('#nextR').onclick=()=>selectRoll(ROLLS[r.i+1],true);
+  if(fly) focusRoll(r);
+}
+function closeSheet(){clearRoll(); selZone=null; setRail(null); sheet.dataset.open='false';}
+
+$('#searchForm').addEventListener('submit',e=>{
+  e.preventDefault(); let v=$('#q').value.trim().toUpperCase().replace(/\s+/g,'');
+  if(!v) return;
+  let r=null;
+  if(/^#?\d+$/.test(v)) r=ROLLS.find(q=>q.id==='#'+v.replace('#',''));
+  else if(/^D-?(EN|DL)\d$/.test(v)) r=ROLLS.find(q=>q.id===v.replace(/^D-?/,'D-'));
+  else if(/^[A-F]$/.test(v)){selectZone(ZONES.find(z=>z.id===v),true);return;}
+  if(r){selectRoll(r,true);}
+  else{ sheet.innerHTML='<div class="sh-head"><div class="sh-title"><div class="eyebrow">ไม่พบ</div><div style="font-size:16px;font-weight:600">ไม่มีลูกกลิ้ง “'+v.replace(/[<>&"]/g,'')+'”</div></div>'+closeBtn+'</div><div class="note">ลองพิมพ์เลข 1–163 และ 172–239 (โซน A–C, E, F), D-EN1–4 / D-DL1–4 (โซน D) หรือพิมพ์ชื่อโซน A–F</div>'; sheet.dataset.open='true'; $('#closeSheet').onclick=closeSheet; }
+});
+
+document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>view(b.dataset.view));
+const layerState={motors:true,frames:true,labels:false,sim:false};
+document.querySelectorAll('[data-layer]').forEach(b=>b.onclick=()=>{
+  const k=b.dataset.layer; layerState[k]=!layerState[k]; b.setAttribute('aria-pressed',layerState[k]);
+  if(groups[k]) groups[k].visible=layerState[k];
+  if(k==='labels') stage.classList.toggle('labels-off',!layerState[k]);
+  if(k==='sim'){slab.visible=layerState.sim; slab.position.x=-MID-6;}
+});
+
+// picking
+const ray=new THREE.Raycaster(), ptr=new THREE.Vector2(), tip=$('#tip');
+let hover=null, down=null;
+function pick(e){const r=renderer.domElement.getBoundingClientRect();ptr.x=((e.clientX-r.left)/r.width)*2-1;ptr.y=-((e.clientY-r.top)/r.height)*2+1;ray.setFromCamera(ptr,cam);const h=ray.intersectObjects(rollMeshes,false)[0];return h?h.object.userData.roll:null;}
+renderer.domElement.addEventListener('pointermove',e=>{
+  if(e.pointerType!=='mouse') return;
+  const r=pick(e);
+  if(hover&&hover!==selRoll&&hover!==r) hover.mesh.material=mats.steel;
+  hover=r;
+  if(r){ if(r!==selRoll) r.mesh.material=mats['z'+r.z.id]; tip.hidden=false; tip.style.left=e.clientX+'px'; tip.style.top=e.clientY+'px'; tip.textContent=r.id+' · Zone '+r.z.id; renderer.domElement.style.cursor='pointer'; }
+  else { tip.hidden=true; renderer.domElement.style.cursor=''; }
+});
+renderer.domElement.addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clientY};});
+renderer.domElement.addEventListener('pointerup',e=>{
+  if(!down||Math.hypot(e.clientX-down.x,e.clientY-down.y)>5) return;
+  const r=pick(e); if(r) selectRoll(r,true);
+});
+addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT') return;
+  if(e.key==='Escape') closeSheet();
+  if(selRoll&&(e.key==='ArrowRight'||e.key==='ArrowLeft')){const n=ROLLS[selRoll.i+(e.key==='ArrowRight'?1:-1)]; if(n) selectRoll(n,true);}
+});
+
+// theme
+const mq=matchMedia('(prefers-color-scheme: dark)');
+const retheme=()=>{themeMats(); ZONES.forEach(z=>{z.lbl.style.setProperty('--zc',css(ZCOL[z.id]));}); if(selRoll) selRoll.mesh.material=mats.hl;};
+mq.addEventListener&&mq.addEventListener('change',retheme);
+new MutationObserver(retheme).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+
+function resize(){const w=stage.clientWidth,h=stage.clientHeight;renderer.setSize(w,h);lr.setSize(w,h);cam.aspect=w/h;cam.updateProjectionMatrix();}
+addEventListener('resize',resize); resize();
+cam.position.copy(isoPos()); ctl.target.set(8,0,0); ctl.update();
+
+let last=performance.now();
+function loop(now){
+  const dt=Math.min((now-last)/1000,.05); last=now;
+  if(fly){const t=Math.min((now-fly.t0)/fly.ms,1),k=ease(t);cam.position.lerpVectors(fly.fp,fly.tp,k);ctl.target.lerpVectors(fly.ft,fly.tt,k);if(t>=1)fly=null;}
+  if(layerState.sim){
+    slab.position.x+=dt*6; if(slab.position.x>MID+6) slab.position.x=-MID-6;
+    const sx=slab.position.x;
+    ROLLS.forEach(r=>{ if(Math.abs(r.x-sx)<12) r.mesh.rotation.z-=dt*6/(r.z.dEnd/2); });
+  }
+  const cd=cam.position.distanceTo(ctl.target); lod.forEach(o=>o.visible=cd<70);
+  ROLLS.forEach(r=>r.lbl.visible=cd<40||r===selRoll);
+  ctl.update(); renderer.render(scene,cam); lr.render(scene,cam);
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+$('#loading').classList.add('done');
+})();
+</script>
