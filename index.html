@@ -5,7 +5,7 @@
 <style>
 /* Layout: full-bleed 3D canvas; floating glass rail (zones) left, toolbar top, detail sheet right/bottom */
 :root{
-  --bg:#E9ECEF; --scene:#E4E8EC; --floor:#D5DAE0; --grid:#C3CAD2;
+  --bg:#E9ECEF; --scene:#DDE5EE; --housing:#3D6DB6; --housing-lo:#E8EDF2; --floor:#AEBBCA; --grid:#9DACBD;
   --surface:rgba(255,255,255,.78); --surface-solid:#FFFFFF; --line:rgba(20,30,45,.10);
   --fg:#16202B; --fg2:#566271; --fg3:#8A95A3;
   --accent:#1F6FEB; --accent-ink:#FFFFFF;
@@ -16,13 +16,13 @@
   --r:12px; --shadow:0 8px 30px rgba(16,24,40,.12),0 1px 2px rgba(16,24,40,.08);
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#0E1216; --scene:#11161B; --floor:#171D24; --grid:#252D36;
+  --bg:#0E1216; --scene:#10171F; --housing:#3A66A8; --housing-lo:#9AA5B1; --floor:#171D24; --grid:#252D36;
   --surface:rgba(22,28,35,.78); --surface-solid:#161C23; --line:rgba(255,255,255,.08);
   --fg:#E8EDF2; --fg2:#9AA6B3; --fg3:#66727F; --accent:#4C8DFF;
   --steel:#AAB3BD; --steel-dark:#6C7682; --frame:#56616E; --motor:#3F78B0;
   --shadow:0 8px 30px rgba(0,0,0,.45); color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#0E1216; --scene:#11161B; --floor:#171D24; --grid:#252D36;
+  --bg:#0E1216; --scene:#10171F; --housing:#3A66A8; --housing-lo:#9AA5B1; --floor:#171D24; --grid:#252D36;
   --surface:rgba(22,28,35,.78); --surface-solid:#161C23; --line:rgba(255,255,255,.08);
   --fg:#E8EDF2; --fg2:#9AA6B3; --fg3:#66727F; --accent:#4C8DFF;
   --steel:#AAB3BD; --steel-dark:#6C7682; --frame:#56616E; --motor:#3F78B0;
@@ -55,6 +55,12 @@ svg.i{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.7;stro
 
 /* zone rail */
 .rail{position:fixed;left:max(16px,env(safe-area-inset-left,0px));top:calc(80px + env(safe-area-inset-top,0px));width:300px;padding:8px;z-index:4;display:flex;flex-direction:column;gap:2px;max-height:calc(100% - 180px);overflow:auto}
+.rail.compact{width:auto}
+.rail.compact h3,.rail.compact .totals,.rail.compact .zone>span:not(.ztag){display:none}
+.rail.compact .zone{grid-template-columns:34px;padding:6px}
+.railtoggle{height:36px;border:0;background:transparent;color:var(--fg2);font:inherit;font-size:12px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:6px;padding:0 10px}
+.railtoggle:hover{background:var(--line);color:var(--fg)}
+.rail.compact .railtoggle span{display:none}
 .rail h3{font-size:11px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--fg3);padding:8px 10px 6px;margin:0}
 .zone{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:9px 10px;border-radius:9px;border:0;background:transparent;color:var(--fg);font:inherit;text-align:left;cursor:pointer;width:100%}
 .zone:hover{background:var(--line)}
@@ -96,6 +102,7 @@ dd{margin:0;text-align:right;font-family:var(--mono);font-size:12.5px}
 /* labels in 3D */
 .lbl{font-family:var(--font);font-size:12px;font-weight:600;color:var(--fg);background:var(--surface);border:1px solid var(--line);backdrop-filter:blur(8px);padding:4px 9px;border-radius:7px;white-space:nowrap;display:flex;align-items:center;gap:7px;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.08)}
 .lbl i{width:18px;height:18px;border-radius:5px;background:var(--zc);color:#fff;font-style:normal;font-size:11px;display:grid;place-items:center}
+.lbl.call{background:var(--surface-solid);border:1.5px solid var(--housing);color:var(--fg);font-size:12.5px;font-weight:600;border-radius:4px;padding:3px 9px;backdrop-filter:none}
 .lbl.minor{font-weight:500;font-size:11px;color:var(--fg2)}
 .lbl.sel{background:var(--hl);color:#1A1400;border-color:transparent;font-family:var(--mono)}
 .lbl.rn{font-family:var(--mono);font-size:10px;font-weight:500;padding:1px 5px;border-radius:4px;color:var(--fg2)}
@@ -132,7 +139,8 @@ dd{margin:0;text-align:right;font-family:var(--mono);font-size:12.5px}
 <header class="top">
   <div class="brand glass"><b>Table Roll Layout</b><span>Aluminum Hot Rolling Mill · ไลน์ R-Mill ถึง Shear</span></div>
   <div class="seg glass views" role="group" aria-label="มุมมอง">
-    <button data-view="iso" aria-pressed="true"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/></svg>ภาพรวม</button>
+    <button data-view="mill" aria-pressed="true"><svg class="i" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="8" rx="1"/><circle cx="12" cy="13" r="2.2"/><path d="M3 18h18"/><circle cx="12" cy="18" r="0"/></svg>หน้าแท่น Mill</button>
+    <button data-view="iso" aria-pressed="false"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/></svg>ภาพรวม</button>
     <button data-view="top"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 12h16"/></svg>ด้านบน</button>
     <button data-view="side"><svg class="i" viewBox="0 0 24 24"><path d="M3 15h18M6 15v4M18 15v4"/><circle cx="8" cy="12" r="2"/><circle cx="16" cy="12" r="2"/></svg>ด้านข้าง</button>
   </div>
@@ -145,7 +153,8 @@ dd{margin:0;text-align:right;font-family:var(--mono);font-size:12.5px}
   </form>
 </header>
 
-<nav class="rail glass" id="rail" aria-label="โซน">
+<nav class="rail glass compact" id="rail" aria-label="โซน">
+  <button class="railtoggle" id="railToggle" aria-expanded="false" aria-label="แสดงรายละเอียดโซน"><svg class="i" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span>ย่อแผง</span></button>
   <h3>โซนตามทิศทางการไหลของ slab</h3>
 </nav>
 
@@ -245,6 +254,8 @@ function themeMats(){
   set('pit',css('--grid'),{metalness:0,roughness:1});
   set('hl',css('--hl'),{metalness:.4,roughness:.35,emissive:new THREE.Color(css('--hl')),emissiveIntensity:.35});
   set('slab',0xC9CDD2,{metalness:.85,roughness:.25});
+  set('housing',css('--housing'),{metalness:.15,roughness:.55});
+  set('housingLo',css('--housing-lo'),{metalness:.1,roughness:.7});
   ZONES.forEach(z=>set('z'+z.id,css(ZCOL[z.id]),{metalness:.2,roughness:.6}));
   if(grid){grid.material.color.set(css('--grid')).convertSRGBToLinear();}
 }
@@ -257,7 +268,7 @@ const box=(w,h,d,m,x,y,z,g)=>{const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d
 const cyl=(r,h,m,x,y,z,axis,g,seg=24)=>{const o=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,seg),m);o.position.set(x,y,z);if(axis==='z')o.rotation.x=Math.PI/2;if(axis==='x')o.rotation.z=Math.PI/2;o.castShadow=true;(g||scene).add(o);return o;};
 
 // floor with mill pit
-const fW=14, gapL=millX-5, gapR=millX+5;
+const fW=60, gapL=millX-5, gapR=millX+5;
 const fl1=new THREE.Mesh(new THREE.PlaneGeometry(gapL-(-MID-20),fW*2),mats.floor); fl1.rotation.x=-Math.PI/2; fl1.position.set((gapL+(-MID-20))/2,0,0); fl1.receiveShadow=true; scene.add(fl1);
 const fl2=new THREE.Mesh(new THREE.PlaneGeometry((MID+20)-gapR,fW*2),mats.floor); fl2.rotation.x=-Math.PI/2; fl2.position.set((gapR+MID+20)/2,0,0); fl2.receiveShadow=true; scene.add(fl2);
 [[-1,1],[1,1]].forEach(([s])=>{const f=new THREE.Mesh(new THREE.PlaneGeometry(10,fW-3.5),mats.floor);f.rotation.x=-Math.PI/2;f.position.set(millX,0,s*(3.5+(fW-3.5)/2));f.receiveShadow=true;scene.add(f);});
@@ -310,40 +321,56 @@ ZONES.forEach(z=>{
   const band=new THREE.Mesh(new THREE.PlaneGeometry(L,0.25),mats['z'+z.id]); band.rotation.x=-Math.PI/2; band.position.set(cx,0.01,-(z.len/2+1.3)); scene.add(band);
 });
 
-// Roughing mill stand (D)
+function callout(t,x,y,z){const d=document.createElement('div');d.className='lbl minor call';d.textContent=t;const o=new THREE.CSS2DObject(d);o.position.set(x,y,z);scene.add(o);return o;}
+// Roughing mill stand (D) — open-window housing so work/backup rolls stay visible from the operator view
 (function(){
   const g=new THREE.Group(); scene.add(g);
-  const H=9.5, hz=2.15;
-  [-1,1].forEach(s=>{
-    [-1,1].forEach(f=>box(0.75,H+2.6,1.0,mats.frame,millX+f*1.05,(H-2.6)/2,s*hz,g));
-    box(2.85,1.2,1.0,mats.frame,millX,H-0.6,s*hz,g);
-    box(2.85,0.9,1.0,mats.frame,millX,-2.15,s*hz,g);
-  });
-  // work rolls Ø1050 max, backup Ø1600 max
-  const wr=0.525, br=0.8;
+  const wr=0.525, br=0.8;                       // WR Ø1050 max, BUR Ø1600 max (GA M171B50790)
   const tw=TOP+0.08+wr, bw=TOP-0.08-wr;
-  cyl(wr,2.9,mats.steel,millX,tw,0,'z',g,40); cyl(wr,2.9,mats.steel,millX,bw,0,'z',g,40);
-  cyl(br,2.9,mats.steelDark,millX,tw+wr+br,0,'z',g,48); cyl(br,2.9,mats.steelDark,millX,bw-wr-br,0,'z',g,48);
+  const topBR=tw+wr+br, winTop=topBR+br+0.35, H=winTop+1.7;
+  [-1,1].forEach(s=>{
+    [-1,1].forEach(f=>{
+      box(0.8,winTop-1.0+2.6,1.1,mats.housingLo,millX+f*1.3,(winTop-1.0-2.6)/2,s*1.95,g);   // lower post
+    });
+    box(0.5,0.5,0.9,mats.steelDark,millX,tw,s*1.75,g); box(0.5,0.5,0.9,mats.steelDark,millX,bw,s*1.75,g);       // WR chocks
+    box(0.9,0.9,0.9,mats.steelDark,millX,topBR,s*1.75,g); box(0.9,0.9,0.9,mats.steelDark,millX,bw-wr-br,s*1.75,g); // BUR chocks
+  });
+  // big blue upper housing block (spans both sides like the reference)
+  box(4.4,H-winTop+1.0,5.4,mats.housing,millX,(H+winTop-1.0)/2,-0.15,g);
+  box(1.2,H-winTop+0.4,1.6,mats.housing,millX+2.4,(H+winTop-0.4)/2,-1.6,g);  // screw-down / hydraulic cap
+  // rolls
+  cyl(wr,2.9,mats.steel,millX,tw,0,'z',g,48); cyl(wr,2.9,mats.steel,millX,bw,0,'z',g,48);
+  cyl(br,2.9,mats.steel,millX,topBR,0,'z',g,56); cyl(br,2.9,mats.steel,millX,bw-wr-br,0,'z',g,56);
   // spindles & main drive on drive side
   cyl(0.22,4.5,mats.steelDark,millX,tw,-(1.45+2.25),'z',g); cyl(0.22,4.5,mats.steelDark,millX,bw,-(1.45+2.25),'z',g);
   box(2.2,2.6,2.2,mats.motor,millX,1.2,-7.2,g);
   // feed table drive motors (110 kW, one per side)
-  [-1,1].forEach(s=>{const mx=millX+s*1.36; box(1.6,0.9,1.2,mats.motor,mx,TOP-0.25,3.2,groups.motors); cyl(0.05,1.6,mats.steelDark,mx,TOP-0.2,2.1,'z',groups.motors);});
+  [-1,1].forEach(s=>{const mx=millX+s*1.36; box(1.6,0.9,1.2,mats.motor,mx,TOP-0.25,-3.4,groups.motors); cyl(0.05,1.6,mats.steelDark,mx,TOP-0.2,-2.3,'z',groups.motors);});
   box(4.6,0.25,2.8,mats['zD'],millX,TOP-0.55,0,groups.frames);
+  // callouts
+  callout('Backup Roll',millX-0.9,topBR+0.4,2.6);
+  callout('Work Roll',millX-1.6,tw+0.1,2.6);
+  window.__mill={tw,H};
 })();
 
 // Edger (vertical rolls)
 (function(){
   const g=new THREE.Group(); scene.add(g);
-  [-1,1].forEach(s=>{cyl(0.5,1.6,mats.steel,edgerX,TOP+0.4,s*1.15,'y',g,36); box(1.6,4.2,0.9,mats.frame,edgerX,2.1,s*2.1,g);});
-  box(1.6,0.8,5.1,mats.frame,edgerX,4.6,0,g);
+  [-1,1].forEach(s=>{
+    cyl(0.42,1.3,mats.steel,edgerX,TOP+0.55,s*1.15,'y',g,40);
+    cyl(0.18,0.5,mats.steelDark,edgerX,TOP+1.45,s*1.15,'y',g,20);
+    box(1.4,TOP+0.05,1.2,mats.housingLo,edgerX,(TOP+0.05)/2-0.1,s*1.35,g);
+  });
+  callout('Edger',edgerX,TOP+2.4,0);
 })();
 
 // 150 mm shear (end of F)
 (function(){const g=new THREE.Group();scene.add(g);
-  [-1,1].forEach(s=>box(0.9,5.2,0.8,mats.frame,SHEAR+0.6,2.4,s*2.0,g));
-  box(0.9,1.0,4.8,mats.frame,SHEAR+0.6,5.2,0); box(0.5,0.5,3.0,mats.steelDark,SHEAR+0.6,TOP+1.2,0,g);
-  const d=document.createElement('div');d.className='lbl minor';d.textContent='150 mm Shear';const o=new THREE.CSS2DObject(d);o.position.set(SHEAR+0.6,6.2,0);scene.add(o);})();
+  const bl=box(0.14,3.4,3.0,mats.housingLo,SHEAR+0.6,TOP+1.9,0,g); bl.rotation.z=-0.22;
+  box(0.16,0.5,3.0,mats.steelDark,SHEAR+0.25,TOP+0.35,0,g);
+  [-1,1].forEach(s=>box(0.7,TOP+4.0,0.6,mats.housing,SHEAR+0.9,(TOP+4.0)/2,s*1.9,g));
+  box(1.0,0.6,4.4,mats.housing,SHEAR+0.9,TOP+4.2,0,g);
+  callout('Shear',SHEAR+0.6,TOP+5.3,0);})();
 // Reference markers from drawings
 function marker(x,text,cls){const d=document.createElement('div');d.className='lbl minor'+(cls?' '+cls:'');d.textContent=text;const o=new THREE.CSS2DObject(d);o.position.set(x,TOP+1.0,2.9);scene.add(o);
   const p=new THREE.Mesh(new THREE.BoxGeometry(0.04,1.0,0.04),mats.frame);p.position.set(x,TOP+0.5,2.4);scene.add(p);}
@@ -354,10 +381,9 @@ marker((rx('#126')+rx('#127'))/2,'Slab cleaning device');
 ZONES.forEach(z=>{
   const d=document.createElement('div'); d.className='lbl'; d.style.setProperty('--zc',css(ZCOL[z.id]));
   d.innerHTML='<i>'+z.id+'</i>'+z.name; const o=new THREE.CSS2DObject(d);
-  const LY={A:2.2,B:2.2,C:4.2,D:11.5,E:4.2,F:2.2}, LZ={A:-2.2,B:-2.2,C:-2.2,D:0,E:-2.2,F:-2.2};
+  const LY={A:2.2,B:2.2,C:4.2,D:7.4,E:4.2,F:2.2}, LZ={A:-2.2,B:-2.2,C:-2.2,D:0,E:-2.2,F:-2.2};
   o.position.set((z.x0+z.x1)/2,TOP+LY[z.id],LZ[z.id]); scene.add(o); z.lbl=d;
 });
-[['Edger',edgerX,6],['℄ Roughing Mill',millX,10.2]].forEach(([t,xx,yy])=>{if(t==='Edger'){const d=document.createElement('div');d.className='lbl minor';d.textContent=t;const o=new THREE.CSS2DObject(d);o.position.set(xx,yy,0);scene.add(o);}});
 // side labels
 [['DRIVE SIDE',-1],['WORK SIDE',1]].forEach(([t,s])=>{const d=document.createElement('div');d.className='lbl minor';d.textContent=t;const o=new THREE.CSS2DObject(d);o.position.set(-MID-3,0.2,s*3.2);scene.add(o);});
 
@@ -380,10 +406,13 @@ const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
 function view(v){
   document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.view===v));
   const asp=stage.clientWidth/stage.clientHeight, far=(LEN/2+10)/Math.tan(THREE.MathUtils.degToRad(cam.fov/2))/Math.max(asp,.5);
+  if(v==='mill') flyTo(heroTarget(),heroPos());
   if(v==='iso') flyTo(new THREE.Vector3(8,0,0),isoPos());
   if(v==='top') flyTo(new THREE.Vector3(0,0,0),new THREE.Vector3(0,far*0.95,0.01));
   if(v==='side') flyTo(new THREE.Vector3(0,2,0),new THREE.Vector3(0,3,far*0.9));
 }
+function heroTarget(){return new THREE.Vector3(millX+1,2.6,0);}
+function heroPos(){const asp=stage.clientWidth/stage.clientHeight;const k=asp<1.2?1.5:asp<1.5?1.18:1;return new THREE.Vector3(millX-6*k,4.6*k,26*k);}
 function isoPos(){const asp=Math.max(stage.clientWidth/stage.clientHeight,.6);const d=(LEN*0.44)/Math.tan(THREE.MathUtils.degToRad(cam.fov/2))/asp;return new THREE.Vector3(8-d*0.18,d*0.42,d*0.62);}
 function focusZone(z){
   const L=Math.max(z.x1-z.x0,8), c=new THREE.Vector3((z.x0+z.x1)/2,TOP,0);
@@ -408,6 +437,7 @@ const tot=document.createElement('div'); tot.className='totals';
 tot.innerHTML='<span>รวมทั้งไลน์</span><span><b>'+ROLLS.length+'</b> ลูก · ยาว ≈ <b>'+Math.round(LEN)+'</b> m</span>'; rail.appendChild(tot);
 
 const sheet=$('#sheet');
+$('#railToggle').onclick=()=>{const c=rail.classList.toggle('compact');$('#railToggle').setAttribute('aria-expanded',!c);};
 let selZone=null, selRoll=null, selLbl=null;
 const fmt=n=>(n>=0?'+':'')+n.toFixed(2);
 function setRail(z){document.querySelectorAll('.zone').forEach(b=>b.setAttribute('aria-pressed',z&&b.dataset.zone===z.id));}
@@ -504,7 +534,7 @@ new MutationObserver(retheme).observe(document.documentElement,{attributes:true,
 
 function resize(){const w=stage.clientWidth,h=stage.clientHeight;renderer.setSize(w,h);lr.setSize(w,h);cam.aspect=w/h;cam.updateProjectionMatrix();}
 addEventListener('resize',resize); resize();
-cam.position.copy(isoPos()); ctl.target.set(8,0,0); ctl.update();
+cam.position.copy(heroPos()); ctl.target.copy(heroTarget()); ctl.update();
 
 let last=performance.now();
 function loop(now){
