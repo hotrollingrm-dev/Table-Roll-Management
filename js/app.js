@@ -7,7 +7,12 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const LV={1:'Critical',2:'High',3:'Medium',4:'Low',5:'Normal',0:'ยังไม่ตรวจ'};
 const LVTH={1:'วิกฤต',2:'สูง',3:'ปานกลาง',4:'ต่ำ',5:'ปกติ'};
 const sevBadge=(l,cls='')=>l?`<span class="sev l${l} ${cls}" style="--c:var(--l${l})" title="Level ${l} · ${LV[l]}">${l}</span>`:`<span class="sev ni ${cls}" title="ยังไม่ตรวจ">–</span>`;
-const fmtDate=d=>{if(!d)return '—';const t=new Date(d);return t.toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'2-digit'});};
+const fmtDate=d=>{if(!d)return '—';const t=new Date(d);return t.toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'numeric'});};
+const bi=(th,en,cls='')=>`<span class="bi ${cls}"><span class="th">${th}</span>${en&&en!==th?`<span class="en">${en}</span>`:''}</span>`;
+/* 3D tile icons (house style §8) */
+const TILE={insp:['#2A64E8','<rect x="15" y="12" width="18" height="25" rx="4"/><path d="M19.5 25l3.5 3.5 6-7"/>'],dmg:['#D93A40','<path d="M24 12l13 23H11z"/><path d="M24 21v6M24 31v.5"/>'],rep:['#0F86A8','<path d="M14 24a10 10 0 0 1 17.5-6.6M34 24a10 10 0 0 1-17.5 6.6"/><path d="M32 12v6h-6M16 36v-6h6"/>'],hist:['#4F6B8F','<circle cx="24" cy="24" r="12"/><path d="M24 17v7l5 3"/>'],plan:['#7652E8','<rect x="12" y="14" width="24" height="22" rx="4"/><path d="M12 21h24M19 10v7M29 10v7"/>'],roll:['#2A64E8','<path d="M15 18h18a4 6 0 0 1 0 12H15a4 6 0 0 1 0-12z"/><path d="M15 18a4 6 0 0 0 0 12"/>'],crit:['#D93A40','<circle cx="24" cy="24" r="12"/><path d="M24 18v7M24 30v.5"/>'],high:['#E36C12','<path d="M24 12l13 23H11z"/><path d="M24 21v6M24 31v.5"/>'],idle:['#7F8898','<circle cx="24" cy="24" r="12" stroke-dasharray="4 3.2"/><path d="M20 24h8"/>'],ok:['#1C9B55','<circle cx="24" cy="24" r="12"/><path d="M18.5 24.5l4 4 7-8"/>'],box:['#0E9A7B','<path d="M12 18l12-6 12 6v12l-12 6-12-6z"/><path d="M12 18l12 6 12-6M24 24v12"/>']};
+let tid=0;
+function tile(k,size=40){const [c,g]=TILE[k]||TILE.roll;const id='tg'+(++tid);return `<svg class="tile" width="${size}" height="${size}" viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="${id}a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:color-mix(in srgb,${c} 9%,var(--tile-mix))"/><stop offset="1" style="stop-color:color-mix(in srgb,${c} 22%,var(--tile-mix))"/></linearGradient><linearGradient id="${id}b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:color-mix(in srgb,${c} 72%,#fff)"/><stop offset="1" style="stop-color:color-mix(in srgb,${c} 90%,#000)"/></linearGradient></defs><rect x="2" y="4.5" width="44" height="42" rx="14" fill="${c}" opacity=".16"/><rect x="2" y="2" width="44" height="42" rx="14" fill="url(#${id}a)" stroke="rgba(255,255,255,.75)" stroke-width=".75"/><g fill="none" stroke="#000" stroke-opacity=".22" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" transform="translate(0 1.6)">${g}</g><g fill="none" stroke="url(#${id}b)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">${g}</g></svg>`;}
 const zoneOf=id=>ZONES.find(z=>z.id===id);
 const rollById=id=>ROLLS.find(r=>r.id===id);
 const ICON={
@@ -36,7 +41,7 @@ const matches=r=>{
 const anyFilter=()=>ui.f.levels.size||ui.f.ni||ui.f.dmg||ui.f.plan;
 
 /* ---------------- toast ---------------- */
-let toastT; function toast(msg){const t=$('#toast');t.innerHTML=ic('insp')+esc(msg);t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),2600);}
+let toastT; function toast(msg,detail='',kind='ok'){const t=$('#toast');t.innerHTML=tile(kind,48)+`<div><div class="tt">${esc(msg)}</div>${detail?`<div class="td">${esc(detail)}</div>`:''}</div>`;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),3800);}
 
 /* ---------------- routing ---------------- */
 const PAGES=['dashboard','layout','inspection','damage','planning','history','analytics','inventory','config'];
@@ -52,7 +57,7 @@ function route(){
   if(p==='layout'){ensureScene(); SC.ready&&SC.resume();} else { SC.ready&&SC.pause(); renderPage(p);}
   try{localStorage.setItem('trm.page',p);}catch(e){}
 }
-function moveInd(a){const ind=$('#navind');if(!a)return;ind.style.width=a.offsetWidth-24+'px';ind.style.transform=`translateX(${a.offsetLeft+12}px)`;a.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'});}
+function moveInd(a){const ind=$('#navind');if(!a)return;ind.style.width=a.offsetWidth+'px';ind.style.transform=`translateX(${a.offsetLeft}px)`;a.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'});}
 addEventListener('hashchange',route);
 addEventListener('resize',()=>moveInd($('.navlinks a[aria-current]')));
 function go(p,after){ if(location.hash!=='#'+p) location.hash=p; else route(); if(after) setTimeout(after,ui.page==='layout'&&SC.ready?60:400);}
@@ -126,7 +131,7 @@ function applySheet(px){
   body.style.setProperty('--sh',h+'px');
   document.documentElement.style.setProperty('--shv',h+'px');
   const PH=$('.page[data-page="layout"]').clientHeight||innerHeight;
-  $('#camctl').style.bottom=(h+12)+'px'; $('#camctl').classList.toggle('off',h+12+300>PH);
+  $('#camctl').style.bottom=(h+12)+'px'; const cc=$('#camctl'); cc.classList.toggle('off',h+12+cc.offsetHeight>PH-(innerWidth<=760?140:150));
   SC.ready&&SC.setSheetOffset(Math.min(h,innerHeight*0.6));
   $('#sheetSize').setAttribute('aria-label',ui.sheet==='full'?'ย่อแผง':'ขยายแผง');
   $('#sheetSize').innerHTML=`<svg class="i" viewBox="0 0 24 24"><path d="${ui.sheet==='full'?'M6 9l6 6 6-6':'M6 15l6-6 6 6'}"/></svg>`;
@@ -169,7 +174,7 @@ function sbar(a){const T=a.reduce((s,x)=>s+x,0)||1;return `<div class="sbar" rol
 function lvrow(a){return `<div class="lvrow">${[1,2,3,4,5].map(k=>`<span><em>L${k}</em><b class="${a[k]?'':'z'}">${a[k]}</b></span>`).join('')}<span><em>ยังไม่ตรวจ</em><b class="${a[0]?'':'z'}">${a[0]}</b></span></div>`;}
 function renderZones(){
   const all=ST.counts();
-  $('#sheetContent').innerHTML=`<div class="tabpane"><div class="zones">${ZONES.map(z=>{const a=ST.counts(z.id);return `<button class="zc" data-z="${z.id}" aria-pressed="${ui.zone===z}"><div class="t"><span class="ztag">${z.id}</span><span class="nm">${esc(z.name)}<small>${z.count} ลูก</small></span></div>${sbar(a)}${lvrow(a)}</button>`;}).join('')}</div>
+  $('#sheetContent').innerHTML=`<div class="tabpane"><div class="zones">${ZONES.map(z=>{const a=ST.counts(z.id);return `<button class="zc" data-z="${z.id}" aria-pressed="${ui.zone===z}"><div class="t"><span class="ztag">${z.id}</span><span class="nm">${esc(z.name)}<small><b>${z.count}</b> ลูก · rolls</small></span></div>${sbar(a)}${lvrow(a)}</button>`;}).join('')}</div>
   <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap;font-size:13px;color:var(--fg2)"><span>ทั้งไลน์ <b class="mono" style="color:var(--fg)">${ROLLS.length}</b> ลูก · Critical <b class="mono" style="color:var(--l1)">${all[1]}</b> · High <b class="mono" style="color:var(--l2)">${all[2]}</b> · ยังไม่ตรวจ <b class="mono" style="color:var(--fg)">${all[0]}</b></span><button class="btn sm" data-allrolls>ดูลูกทั้งไลน์</button></div></div>`;
   $$('#sheetContent .zc').forEach(b=>b.onclick=()=>selectZone(zoneOf(b.dataset.z)));
   $('#sheetContent [data-allrolls]').onclick=()=>{ui.zone=null;ui.f.scope='all';ui.pg=0;SC.ready&&SC.fitAll();renderLegend();setTab('rolls');};
@@ -252,25 +257,25 @@ function renderDetail(){
      <div class="facts">
        <div><span>Physical Roll ID</span><b class="m">${esc(v.phys||'ยังไม่ระบุ')}</b></div>
        <div><span>วันที่ติดตั้ง</span><b>${fmtDate(v.install)}</b></div>
-       <div><span>อายุใช้งาน</span><b class="m">${v.age!=null?v.age+' วัน':'—'}</b></div>
+       <div><span>อายุใช้งาน</span><b class="m">${v.age!=null?v.age+'<small>วัน</small>':'—'}</b></div>
        <div><span>Severity ล่าสุด</span><b>${v.level?'L'+v.level+' '+LV[v.level]:'ยังไม่ตรวจ'}</b></div>
        <div><span>ตรวจล่าสุด</span><b>${v.lastInsp?fmtDate(v.lastInsp.date):'—'}</b></div>
        <div><span>แผนเปลี่ยน</span><b>${planTxt}</b></div>
      </div>
      <div class="acts" role="group" aria-label="Quick actions">
-       <button class="pri" data-act="insp" aria-pressed="${ui.action==='insp'}">${ic('insp')}บันทึกผลตรวจ</button>
-       <button data-act="dmg" aria-pressed="${ui.action==='dmg'}">${ic('dmg')}แจ้งเสียหาย</button>
-       <button data-act="rep" aria-pressed="${ui.action==='rep'}">${ic('rep')}เปลี่ยนลูก</button>
-       <button data-act="hist">${ic('hist')}ดูประวัติ</button>
-       <button data-act="plan" aria-pressed="${ui.action==='plan'}">${ic('plan')}${v.plan?'แก้แผน':'เข้าแผน'}</button>
+       <button data-act="insp" aria-pressed="${ui.action==='insp'}">${tile('insp',40)}${bi('บันทึกผลตรวจ','Record Inspection')}</button>
+       <button data-act="dmg" aria-pressed="${ui.action==='dmg'}">${tile('dmg',40)}${bi('แจ้งเสียหาย','Report Damage')}</button>
+       <button data-act="rep" aria-pressed="${ui.action==='rep'}">${tile('rep',40)}${bi('เปลี่ยนลูก','Replace Roll')}</button>
+       <button data-act="hist">${tile('hist',40)}${bi('ดูประวัติ','View History')}</button>
+       <button data-act="plan" aria-pressed="${ui.action==='plan'}">${tile('plan',40)}${bi(v.plan?'แก้แผน':'เข้าแผน','Add to Planning')}</button>
      </div>
      <div id="actForm"></div>
    </div>
    <div>
-     <div class="sect"><h3>Severity history <span class="mono" style="text-transform:none;letter-spacing:0">${v.insp.length} ครั้ง</span></h3>${histLv.length?`<div class="hist" role="img" aria-label="ประวัติ severity">${histLv.map(x=>`<i style="--c:var(--l${x.level});height:${(6-x.level)*16+12}%" title="${fmtDate(x.date)} · L${x.level}"></i>`).join('')}</div>`:'<div class="none">ยังไม่มีบันทึกการตรวจ</div>'}</div>
-     <div class="sect"><h3>Inspection records</h3>${recList(v.insp,x=>`<div class="rec"><span class="d">${fmtDate(x.date)}</span><span class="t">${x.by?esc(x.by):'—'}${x.note?` <small>· ${esc(x.note)}</small>`:''}</span>${sevBadge(x.level)}</div>`,'ยังไม่มีบันทึกการตรวจ · กด “บันทึกผลตรวจ” เพื่อเริ่ม')}</div>
-     <div class="sect"><h3>Damage records</h3>${recList(v.dmg,x=>`<div class="rec"><span class="d">${fmtDate(x.date)}</span><span class="t">${esc(x.type)}${x.note?` <small>· ${esc(x.note)}</small>`:''}</span><span class="status ${x.status==='open'?'st-open':'st-closed'}">${x.status==='open'?'เปิดอยู่':'ปิดแล้ว'}</span></div>`,'ไม่มีรายงานความเสียหาย')}</div>
-     <div class="sect"><h3>Replacement history</h3>${recList(v.rep,x=>`<div class="rec"><span class="d">${fmtDate(x.date)}</span><span class="t mono" style="font-size:12.5px">${esc(x.oldPhys||'?')} → ${esc(x.newPhys)}</span><span class="d">${esc(x.reason||'')}</span></div>`,'ยังไม่เคยเปลี่ยนลูกในระบบ')}</div>
+     <div class="sect"><h3><span>ประวัติระดับ<span class="en">Severity history</span></span> <span class="mono" style="text-transform:none;letter-spacing:0">${v.insp.length} ครั้ง</span></h3>${histLv.length?`<div class="hist" role="img" aria-label="ประวัติ severity">${histLv.map(x=>`<i style="--c:var(--l${x.level});height:${(6-x.level)*16+12}%" title="${fmtDate(x.date)} · L${x.level}"></i>`).join('')}</div>`:'<div class="none">ยังไม่มีบันทึกการตรวจ</div>'}</div>
+     <div class="sect"><h3><span>บันทึกการตรวจ<span class="en">Inspection records</span></span></h3>${recList(v.insp,x=>`<div class="rec"><span class="d">${fmtDate(x.date)}</span><span class="t">${x.by?esc(x.by):'—'}${x.note?` <small>· ${esc(x.note)}</small>`:''}</span>${sevBadge(x.level)}</div>`,'ยังไม่มีบันทึกการตรวจ · กด “บันทึกผลตรวจ” เพื่อเริ่ม')}</div>
+     <div class="sect"><h3><span>ความเสียหาย<span class="en">Damage records</span></span></h3>${recList(v.dmg,x=>`<div class="rec"><span class="d">${fmtDate(x.date)}</span><span class="t">${esc(x.type)}${x.note?` <small>· ${esc(x.note)}</small>`:''}</span><span class="status ${x.status==='open'?'st-open':'st-closed'}">${x.status==='open'?'เปิดอยู่':'ปิดแล้ว'}</span></div>`,'ไม่มีรายงานความเสียหาย')}</div>
+     <div class="sect"><h3><span>ประวัติการเปลี่ยน<span class="en">Replacement history</span></span></h3>${recList(v.rep,x=>`<div class="rec"><span class="d">${fmtDate(x.date)}</span><span class="t mono" style="font-size:12.5px">${esc(x.oldPhys||'?')} → ${esc(x.newPhys)}</span><span class="d">${esc(x.reason||'')}</span></div>`,'ยังไม่เคยเปลี่ยนลูกในระบบ')}</div>
      <details class="more"><summary>สเปกตามแบบ GA · ${esc(z.dwg)}</summary><dl class="spec">
        <dt>ประเภท</dt><dd>${esc(z.type)}</dd><dt>Ø ปลาย / กลาง</dt><dd>${Math.round(z.dEnd*1000)} / ${Math.round(z.dMid*1000)} mm</dd><dt>ความยาว body</dt><dd>≈${Math.round(z.len*1000)} mm</dd>
        <dt>มอเตอร์</dt><dd>${esc(z.motor).replace(/\n/g,'<br>')}</dd><dt>Pitch</dt><dd>${esc(z.pitchTxt)}</dd><dt>ระยะจาก ℄ Mill</dt><dd>≈ ${(r.x-millX>=0?'+':'')+(r.x-millX).toFixed(2)} m</dd>
@@ -299,10 +304,10 @@ function renderActionForm(){
   $$('[data-cancel]',box).forEach(b=>b.onclick=()=>{ui.action=null;renderDetail();});
   const un=$('[data-unplan]',box); if(un) un.onclick=()=>{ST.setPlan(r.id,null);ui.action=null;toast('เอา '+r.id+' ออกจากแผนแล้ว');};
   $('#f').onsubmit=e=>{e.preventDefault();const val=id=>{const x=$('#'+id,box);return x?x.value.trim():'';};
-    if(a==='insp'){if(!lvl){$('#fe').hidden=false;return;}ST.addInspection(r.id,{date:val('fd'),level:lvl,by:val('fb'),note:val('fn')});ui.action=null;toast('บันทึกผลตรวจ '+r.id+' แล้ว · Level '+lvl);}
-    if(a==='dmg'){if(!lvl){$('#fe').hidden=false;return;}ST.addDamage(r.id,{date:val('fd'),type:val('ft'),level:lvl,note:val('fn')});ui.action=null;toast('ส่งรายงานความเสียหาย '+r.id+' แล้ว');}
-    if(a==='rep'){const p=val('fp');if(!p){$('#fe').hidden=false;$('#fp').focus();return;}ST.replace(r.id,{date:val('fd'),newPhys:p,reason:val('fr')});ui.action=null;toast('เปลี่ยนลูก '+r.id+' แล้ว · '+p);}
-    if(a==='plan'){ST.setPlan(r.id,{date:val('fd'),status:val('fs'),priority:val('fpr'),note:val('fn')});ui.action=null;toast('บันทึกแผนเปลี่ยน '+r.id+' แล้ว');}
+    if(a==='insp'){if(!lvl){$('#fe').hidden=false;return;}ST.addInspection(r.id,{date:val('fd'),level:lvl,by:val('fb'),note:val('fn')});ui.action=null;toast('บันทึกผลตรวจ '+r.id+' แล้ว','Inspection saved · Level '+lvl+' '+LV[lvl],'insp');}
+    if(a==='dmg'){if(!lvl){$('#fe').hidden=false;return;}ST.addDamage(r.id,{date:val('fd'),type:val('ft'),level:lvl,note:val('fn')});ui.action=null;toast('ส่งรายงานความเสียหาย '+r.id+' แล้ว','Damage reported · Level '+lvl,'dmg');}
+    if(a==='rep'){const p=val('fp');if(!p){$('#fe').hidden=false;$('#fp').focus();return;}ST.replace(r.id,{date:val('fd'),newPhys:p,reason:val('fr')});ui.action=null;toast('เปลี่ยนลูก '+r.id+' แล้ว','New roll '+p,'rep');}
+    if(a==='plan'){ST.setPlan(r.id,{date:val('fd'),status:val('fs'),priority:val('fpr'),note:val('fn')});ui.action=null;toast('บันทึกแผนเปลี่ยน '+r.id+' แล้ว','Added to replacement plan','plan');}
   };
   const first=$('.lvpick button,#fp,#fd',box); first&&first.focus({preventScroll:true});
 }
@@ -317,7 +322,7 @@ ST.on(()=>{
 });
 
 /* ================= other pages ================= */
-function pageShell(title,sub,inner,tools=''){return `<div class="pagewrap"><div class="ph"><div><h1>${title}</h1>${sub?`<p>${sub}</p>`:''}</div>${tools}</div>${inner}</div>`;}
+function pageShell(title,sub,inner,tools=''){const t=Array.isArray(title)?`${title[0]}<span class="en">${title[1]}</span>`:title;return `<div class="pagewrap"><div class="ph"><div><h1>${t}</h1>${sub?`<p>${sub}</p>`:''}</div>${tools}</div>${inner}</div>`;}
 function openInLayout(id,action){const r=rollById(id);go('layout',()=>selectRoll(r,{fly:true,action}));}
 function bindOpen(root){$$('[data-open]',root).forEach(b=>b.onclick=()=>openInLayout(b.dataset.open,b.dataset.action||null));}
 const histFilter={q:'',type:'all'};
@@ -333,12 +338,12 @@ function pDashboard(){
   const plan=Object.keys(D.plans).length, openD=D.damages.filter(x=>x.status==='open').length;
   const urgent=ROLLS.filter(r=>{const l=ST.level(r.id);return l&&l<=2;}).sort((x,y)=>ST.level(x.id)-ST.level(y.id)||x.i-y.i);
   const recent=timeline().slice(0,8);
-  return pageShell('ตอนนี้ไลน์เป็นอย่างไร',`${ROLLS.length} ลูก · Critical ${a[1]} · High ${a[2]} · ยังไม่ตรวจ ${a[0]} ลูก`,
+  return pageShell(['ตอนนี้ไลน์เป็นอย่างไร','Dashboard · line status now'],`${ROLLS.length} ลูก · Critical ${a[1]} · High ${a[2]} · ยังไม่ตรวจ ${a[0]} ลูก`,
   `<div class="kpis">
-    <button class="kpi" data-kpi="1"><span>${sevBadge(1)}Critical</span><b style="color:var(--l1)">${a[1]}</b><small>ต้องจัดการทันที</small></button>
-    <button class="kpi" data-kpi="2"><span>${sevBadge(2)}High</span><b style="color:var(--l2)">${a[2]}</b><small>วางแผนเปลี่ยน</small></button>
-    <button class="kpi" data-kpi="0"><span>${sevBadge(0)}ยังไม่ตรวจ</span><b>${a[0]}</b><small>จาก ${ROLLS.length} ลูก</small></button>
-    <button class="kpi" data-kpi="plan"><span>${ic('plan')}อยู่ในแผนเปลี่ยน</span><b>${plan}</b><small>ความเสียหายเปิดอยู่ ${openD} รายการ</small></button>
+    <button class="kpi ${a[1]?'alert':''}" data-kpi="1"><span>${tile('crit',44)}${bi('วิกฤต · L1','Critical')}</span><b style="color:var(--l1)">${a[1]}<small>ลูก</small></b><small>ต้องจัดการทันที · Act now</small></button>
+    <button class="kpi" data-kpi="2"><span>${tile('high',44)}${bi('สูง · L2','High')}</span><b style="color:var(--l2)">${a[2]}<small>ลูก</small></b><small>ควรวางแผนเปลี่ยน · Plan replacement</small></button>
+    <button class="kpi" data-kpi="0"><span>${tile('idle',44)}${bi('ยังไม่ตรวจ','Not inspected')}</span><b>${a[0]}<small>/ ${ROLLS.length}</small></b><small>ยังไม่มีบันทึกการตรวจ</small></button>
+    <button class="kpi" data-kpi="plan"><span>${tile('plan',44)}${bi('อยู่ในแผนเปลี่ยน','In replacement plan')}</span><b>${plan}<small>ลูก</small></b><small>ความเสียหายเปิดอยู่ ${openD} รายการ</small></button>
   </div>
   <div class="cols">
     <div class="card"><h2>ต้องจัดการก่อน <span class="sevname">${urgent.length} ลูก · L1–L2</span></h2>${urgent.length?`<div class="tblwrap"><table class="tbl"><thead><tr><th>ระดับ</th><th>ลูก</th><th>Zone</th><th>ความเสียหาย</th><th>แผน</th><th></th></tr></thead><tbody>${urgent.slice(0,10).map(r=>{const v=ST.roll(r.id);return `<tr><td>${sevBadge(v.level)}</td><td class="mono"><b>${esc(r.id)}</b></td><td>${r.z.id}</td><td>${v.openDmg[0]?esc(v.openDmg[0].type):'—'}</td><td>${v.plan?`<span class="status st-${v.plan.status}">${v.plan.status==='approved'?'อนุมัติ':'วางแผน'} ${fmtDate(v.plan.date)}</span>`:'<span class="sevname">ยังไม่มี</span>'}</td><td style="text-align:right"><button class="linkbtn" data-open="${esc(r.id)}">ดูใน 3D</button></td></tr>`;}).join('')}</tbody></table></div>${urgent.length>10?`<button class="linkbtn" data-kpi="12" style="margin-top:8px">ดูทั้งหมด ${urgent.length} ลูกในหน้า 3D</button>`:''}`:'<div class="emptyst"><b>ไม่มีลูกระดับ Critical หรือ High</b>ลูกที่ตรวจแล้วอยู่ในเกณฑ์ปกติ</div>'}</div>
@@ -360,7 +365,7 @@ function timeline(){
   D.replacements.forEach(x=>ev.push({date:x.date,kind:'rep',pos:x.pos,t:'เปลี่ยนลูก',s:(x.oldPhys||'?')+' → '+x.newPhys}));
   return ev.sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0);
 }
-const tlItem=e=>`<div class="tli"><span class="d">${fmtDate(e.date)}</span><span class="ic">${ic(e.kind)}</span><div class="x"><b class="mono">${esc(e.pos)}</b> ${esc(e.t)} ${e.level?sevBadge(e.level):''}<small>${esc(e.s||'')}</small></div></div>`;
+const tlItem=e=>`<div class="tli"><span class="d">${fmtDate(e.date)}</span>${tile(e.kind,40)}<div class="x"><b class="mono">${esc(e.pos)}</b> ${esc(e.t)} ${e.level?sevBadge(e.level):''}<small>${esc(e.s||'')}</small></div></div>`;
 
 function pInspection(){
   const due=ROLLS.filter(r=>{const v=ST.roll(r.id);if(!v.lastInsp)return true;return (Date.now()-new Date(v.lastInsp.date))/86400000>30;});
@@ -368,7 +373,7 @@ function pInspection(){
   const recent=ST.data.inspections.slice().sort((a,b)=>a.date<b.date?1:-1).slice(0,12);
   const zf=pInspection.zone||'all';
   const rows=due.filter(r=>zf==='all'||r.z.id===zf);
-  return pageShell('Inspection','คิวลูกที่ต้องตรวจ: ยังไม่เคยตรวจ หรือตรวจครั้งล่าสุดเกิน 30 วัน',
+  return pageShell(['ตรวจสอบลูกกลิ้ง','Inspection'],'คิวลูกที่ต้องตรวจ: ยังไม่เคยตรวจ หรือตรวจครั้งล่าสุดเกิน 30 วัน',
   `<div class="cols"><div class="card"><h2>คิวตรวจ <span class="sevname">${due.length} ลูก · ยังไม่เคยตรวจ ${never}</span></h2>
    <div class="fl" style="margin-bottom:12px"><button class="fbtn" data-iz="all" aria-pressed="${zf==='all'}">ทุกโซน</button>${ZONES.map(z=>`<button class="fbtn" data-iz="${z.id}" aria-pressed="${zf===z.id}">${z.id}</button>`).join('')}</div>
    ${rows.length?`<div class="tblwrap" style="max-height:520px;overflow:auto"><table class="tbl"><thead><tr><th>ลูก</th><th>Zone</th><th>ตรวจล่าสุด</th><th>ระดับ</th><th></th></tr></thead><tbody>${rows.slice(0,60).map(r=>{const v=ST.roll(r.id);return `<tr><td class="mono"><b>${esc(r.id)}</b></td><td>${r.z.id}</td><td>${v.lastInsp?fmtDate(v.lastInsp.date):'<span class="sevname">ยังไม่เคย</span>'}</td><td>${sevBadge(v.level)}</td><td style="text-align:right"><button class="btn sm pri" data-open="${esc(r.id)}" data-action="insp">บันทึกผลตรวจ</button></td></tr>`;}).join('')}</tbody></table></div>${rows.length>60?`<p class="sevname">แสดง 60 จาก ${rows.length} ลูก · เลือกโซนเพื่อดูส่วนที่เหลือ</p>`:''}`:'<div class="emptyst"><b>ไม่มีลูกค้างตรวจ</b>ทุกลูกในโซนนี้ตรวจภายใน 30 วันแล้ว</div>'}</div>
@@ -379,7 +384,7 @@ pInspection.wire=el=>$$('[data-iz]',el).forEach(b=>b.onclick=()=>{pInspection.zo
 function pDamage(){
   const st=pDamage.st||'open';
   const list=ST.data.damages.filter(x=>st==='all'||x.status===st).sort((a,b)=>a.level-b.level||(a.date<b.date?1:-1));
-  return pageShell('Damage Report','รายงานความเสียหายของลูกกลิ้ง เปิด/ปิดสถานะได้จากที่นี่ แจ้งใหม่จากหน้ารายละเอียดลูกใน 3D Layout',
+  return pageShell(['รายงานความเสียหาย','Damage Report'],'รายงานความเสียหายของลูกกลิ้ง เปิด/ปิดสถานะได้จากที่นี่ แจ้งใหม่จากหน้ารายละเอียดลูกใน 3D Layout',
   `<div class="card"><h2><span class="fl"><button class="fbtn" data-ds="open" aria-pressed="${st==='open'}">เปิดอยู่</button><button class="fbtn" data-ds="closed" aria-pressed="${st==='closed'}">ปิดแล้ว</button><button class="fbtn" data-ds="all" aria-pressed="${st==='all'}">ทั้งหมด</button></span>
    <form class="toolbar" id="newDmg"><label for="ndq" style="position:absolute;left:-9999px">เลขลูก</label><input id="ndq" class="inpnum" style="width:120px;text-align:left" placeholder="เลขลูก"><button class="btn sm pri">แจ้งเสียหายใหม่</button></form></h2>
    ${list.length?`<div class="tblwrap"><table class="tbl"><thead><tr><th>ระดับ</th><th>ลูก</th><th>Zone</th><th>ประเภท</th><th>วันที่พบ</th><th>รายละเอียด</th><th>สถานะ</th><th></th></tr></thead><tbody>${list.map(x=>{const r=rollById(x.pos);return `<tr><td>${sevBadge(x.level)}</td><td class="mono"><b>${esc(x.pos)}</b></td><td>${r?r.z.id:'—'}</td><td>${esc(x.type)}</td><td class="mono">${fmtDate(x.date)}</td><td>${esc(x.note||'—')}</td><td><span class="status ${x.status==='open'?'st-open':'st-closed'}">${x.status==='open'?'เปิดอยู่':'ปิดแล้ว'}</span></td><td style="text-align:right;white-space:nowrap"><button class="linkbtn" data-tog="${x.id}">${x.status==='open'?'ปิดงาน':'เปิดใหม่'}</button><button class="linkbtn" data-open="${esc(x.pos)}">ดูใน 3D</button></td></tr>`;}).join('')}</tbody></table></div>`:`<div class="emptyst"><b>ไม่มีรายงาน${st==='open'?'ที่เปิดอยู่':''}</b>แจ้งความเสียหายได้จากปุ่มด้านบน หรือจากหน้ารายละเอียดลูก</div>`}</div>`);
@@ -391,7 +396,7 @@ pDamage.wire=el=>{$$('[data-ds]',el).forEach(b=>b.onclick=()=>{pDamage.st=b.data
 function pPlanning(){
   const P=ST.data.plans, ids=Object.keys(P).sort((a,b)=>P[a].date<P[b].date?-1:1);
   const cand=ROLLS.filter(r=>{const l=ST.level(r.id);return l&&l<=2&&!P[r.id];});
-  return pageShell('Replacement Planning',`${ids.length} ลูกอยู่ในแผน · ลูกระดับ L1–L2 ที่ยังไม่มีแผน ${cand.length} ลูก`,
+  return pageShell(['แผนเปลี่ยนลูกกลิ้ง','Replacement Planning'],`${ids.length} ลูกอยู่ในแผน · ลูกระดับ L1–L2 ที่ยังไม่มีแผน ${cand.length} ลูก`,
   `<div class="cols"><div class="card"><h2>แผนเปลี่ยนตามวันที่</h2>${ids.length?`<div class="tblwrap"><table class="tbl"><thead><tr><th>กำหนด</th><th>ลูก</th><th>ระดับ</th><th>ความสำคัญ</th><th>สถานะ</th><th></th></tr></thead><tbody>${ids.map(id=>{const p=P[id],v=ST.roll(id);const late=p.date<ST.today();return `<tr><td class="mono" style="${late?'color:var(--l1);font-weight:600':''}">${fmtDate(p.date)}${late?' · เลยกำหนด':''}</td><td class="mono"><b>${esc(id)}</b></td><td>${sevBadge(v?v.level:0)}</td><td>${esc(p.priority||'—')}</td><td><span class="status st-${p.status}">${p.status==='approved'?'อนุมัติแล้ว':'วางแผน'}</span></td><td style="text-align:right;white-space:nowrap">${p.status!=='approved'?`<button class="linkbtn" data-appr="${esc(id)}">อนุมัติ</button>`:''}<button class="linkbtn" data-open="${esc(id)}" data-action="rep">บันทึกการเปลี่ยน</button></td></tr>`;}).join('')}</tbody></table></div>`:'<div class="emptyst"><b>ยังไม่มีลูกในแผน</b>เพิ่มจากปุ่ม “เข้าแผน” ในหน้ารายละเอียดลูก</div>'}</div>
   <div class="card"><h2>ควรพิจารณาเข้าแผน <span class="sevname">${cand.length}</span></h2>${cand.length?`<div class="rlist">${cand.slice(0,12).map(r=>{const v=ST.roll(r.id);return `<button class="rrow" data-open="${esc(r.id)}" data-action="plan">${sevBadge(v.level)}<span class="id">${esc(r.id)}</span><span class="meta">Zone ${r.z.id} · ${v.openDmg[0]?esc(v.openDmg[0].type):'ตรวจ '+fmtDate(v.levelDate)}</span><span></span><span class="age">${v.age??'—'} วัน</span></button>`;}).join('')}</div>`:'<div class="emptyst"><b>ไม่มีลูกที่ต้องเพิ่ม</b>ลูก L1–L2 ทุกลูกมีแผนแล้ว</div>'}</div></div>`);
 }
@@ -401,7 +406,7 @@ function pHistory(){
   const f=histFilter; let ev=timeline();
   if(f.type!=='all') ev=ev.filter(e=>e.kind===f.type);
   const q=f.q.trim().toUpperCase().replace(/^#/,''); if(q) ev=ev.filter(e=>e.pos.replace('#','').toUpperCase()===q||e.pos.toUpperCase().includes(q));
-  return pageShell('History','ประวัติการตรวจ ความเสียหาย และการเปลี่ยนลูก เรียงจากล่าสุด',
+  return pageShell(['ประวัติ','History'],'ประวัติการตรวจ ความเสียหาย และการเปลี่ยนลูก เรียงจากล่าสุด',
   `<div class="card"><h2><span class="toolbar"><label for="hq" style="position:absolute;left:-9999px">ค้นหาเลขลูก</label><input id="hq" class="inpnum" style="width:150px;text-align:left" value="${esc(f.q)}" placeholder="เลขลูก เช่น 152"><span class="fl">${[['all','ทั้งหมด'],['insp','ตรวจ'],['dmg','เสียหาย'],['rep','เปลี่ยนลูก']].map(([k,t])=>`<button class="fbtn" data-ht="${k}" aria-pressed="${f.type===k}">${t}</button>`).join('')}</span></span><span class="sevname">${ev.length} รายการ</span></h2>
   ${ev.length?`<div class="tl">${ev.slice(0,80).map(tlItem).join('')}</div>${ev.length>80?'<p class="sevname">แสดง 80 รายการล่าสุด · ค้นหาเลขลูกเพื่อดูเฉพาะลูก</p>':''}`:'<div class="emptyst"><b>ไม่พบประวัติ</b>ลองล้างคำค้นหรือเลือกประเภท “ทั้งหมด”</div>'}</div>`);
 }
@@ -417,21 +422,21 @@ function pAnalytics(){
   const bars=`<svg class="chart" viewBox="0 0 ${W} ${ch+30}" width="100%" role="img" aria-label="จำนวนการตรวจต่อสัปดาห์">${ticks.map(t=>{const y=ch-(t/mx)*(ch-10);return `<line class="gl" x1="30" x2="${W}" y1="${y}" y2="${y}"/><text x="24" y="${y+4}" text-anchor="end">${t}</text>`;}).join('')}${weeks.map((w,i)=>{const h=(w.n/mx)*(ch-10);return `<rect x="${36+i*bw+bw*.18}" y="${ch-h}" width="${bw*.64}" height="${h}" rx="4" fill="var(--accent)" opacity="${i===7?1:.55}"><title>${w.lab}: ${w.n} ครั้ง</title></rect><text x="${36+i*bw+bw/2}" y="${ch+18}" text-anchor="middle">${w.lab}</text>`;}).join('')}</svg>`;
   const life=ZONES.map(z=>{const ages=ROLLS.filter(r=>r.z===z).map(r=>ST.roll(r.id).age).filter(a=>a!=null);return {z,avg:ages.length?Math.round(ages.reduce((s,a)=>s+a,0)/ages.length):null};});
   const lm=Math.max(1,...life.map(l=>l.avg||0));
-  return pageShell('Analytics','ภาพรวมสุขภาพของ table roll จากข้อมูลที่บันทึก',
+  return pageShell(['วิเคราะห์','Analytics'],'ภาพรวมสุขภาพของ table roll จากข้อมูลที่บันทึก',
   `<div class="cols"><div class="card"><h2>Severity ต่อโซน <span class="sevname">ลูกทั้งหมดในโซน</span></h2>${dist}<div class="fl" style="margin-top:10px;font-size:12px;color:var(--fg2)">${[1,2,3,4,5].map(k=>`<span style="display:inline-flex;gap:5px;align-items:center"><span class="sev l${k}" style="--c:var(--l${k});min-width:18px;height:18px;font-size:10.5px">${k}</span>${LV[k]}</span>`).join('')}<span style="display:inline-flex;gap:5px;align-items:center"><span class="sev ni" style="min-width:18px;height:18px">–</span>ยังไม่ตรวจ</span></div></div>
    <div class="card"><h2>อายุใช้งานเฉลี่ย <span class="sevname">วัน</span></h2><div style="display:flex;flex-direction:column;gap:10px">${life.map(l=>`<div style="display:grid;grid-template-columns:28px 1fr 64px;gap:10px;align-items:center"><b>${l.z.id}</b><div style="height:10px;border-radius:5px;background:var(--line);overflow:hidden"><div style="height:100%;width:${(l.avg||0)/lm*100}%;background:var(--fg2);border-radius:5px"></div></div><span class="mono" style="text-align:right">${l.avg??'—'}</span></div>`).join('')}</div></div></div>
   <div class="card"><h2>จำนวนการตรวจต่อสัปดาห์ <span class="sevname">8 สัปดาห์ล่าสุด</span></h2>${bars}</div>`);
 }
 
 function pInventory(){
-  return pageShell('Inventory','ลูกกลิ้งสำรองแยกตามแบบของแต่ละโซน แก้ตัวเลขในคลังและจุดสั่งซื้อได้โดยตรง',
+  return pageShell(['คลังลูกกลิ้งสำรอง','Inventory'],'ลูกกลิ้งสำรองแยกตามแบบของแต่ละโซน แก้ตัวเลขในคลังและจุดสั่งซื้อได้โดยตรง',
   `<div class="card"><div class="tblwrap"><table class="tbl"><thead><tr><th>Zone</th><th>แบบลูก</th><th>Ø ปลาย/กลาง</th><th class="num">ติดตั้ง</th><th class="num">ในคลัง</th><th class="num">ขั้นต่ำ</th><th class="num">ในแผนเปลี่ยน</th><th>สถานะ</th></tr></thead><tbody>${ZONES.map(z=>{const iv=ST.data.inventory[z.id]||{stock:0,min:0};const planned=ROLLS.filter(r=>r.z===z&&ST.roll(r.id).plan).length;const low=iv.stock<iv.min||iv.stock<planned;return `<tr><td><span class="ztag" style="width:30px;height:30px;font-size:14px">${z.id}</span></td><td>${esc(z.type)}<br><span class="sevname">${esc(z.dwg)}</span></td><td class="mono">${Math.round(z.dEnd*1000)} / ${Math.round(z.dMid*1000)}</td><td class="num">${z.count}</td><td class="num"><label for="inv-s-${z.id}" style="position:absolute;left:-9999px">ในคลัง Zone ${z.id}</label><input class="inpnum" id="inv-s-${z.id}" type="number" min="0" value="${iv.stock}" data-inv="${z.id}" data-k="stock"></td><td class="num"><label for="inv-m-${z.id}" style="position:absolute;left:-9999px">ขั้นต่ำ Zone ${z.id}</label><input class="inpnum" id="inv-m-${z.id}" type="number" min="0" value="${iv.min}" data-inv="${z.id}" data-k="min"></td><td class="num">${planned}</td><td><span class="status ${low?'st-low':'st-ok'}">${low?'ต่ำกว่าที่ต้องใช้':'พอ'}</span></td></tr>`;}).join('')}</tbody></table></div></div>`);
 }
 pInventory.wire=el=>$$('[data-inv]',el).forEach(i=>i.onchange=()=>{ST.setInventory(i.dataset.inv,{[i.dataset.k]:Math.max(0,+i.value||0)});toast('บันทึกจำนวนในคลัง Zone '+i.dataset.inv+' แล้ว');});
 
 function pConfig(){
   const D=ST.data;
-  return pageShell('Settings','แหล่งข้อมูลและการจัดการข้อมูลของแอป',
+  return pageShell(['ตั้งค่า','Settings'],'แหล่งข้อมูลและการจัดการข้อมูลของแอป',
   `<div class="cols"><div class="card"><h2>แหล่งข้อมูล</h2>
     <dl class="spec" style="grid-template-columns:auto 1fr"><dt>ที่เก็บข้อมูล</dt><dd style="font-family:var(--font)">เบราว์เซอร์เครื่องนี้ (ชั่วคราว)</dd><dt>Supabase</dt><dd style="font-family:var(--font)">ยังไม่เชื่อมต่อ</dd><dt>ข้อมูลตัวอย่าง</dt><dd style="font-family:var(--font)">${D.demo?'ใช้อยู่':'ไม่ได้ใช้'}</dd>
     <dt>บันทึกตรวจ</dt><dd>${D.inspections.length}</dd><dt>รายงานเสียหาย</dt><dd>${D.damages.length}</dd><dt>การเปลี่ยนลูก</dt><dd>${D.replacements.length}</dd><dt>แผนเปลี่ยน</dt><dd>${Object.keys(D.plans).length}</dd></dl>
@@ -453,6 +458,7 @@ pConfig.wire=el=>{
 
 /* ---------------- boot ---------------- */
 $('#demoBadge').hidden=!ST.demo;
+$('#brandTile').innerHTML=tile('roll',40);
 renderLegend();
 let start='layout'; if(!location.hash){try{const p=localStorage.getItem('trm.page');if(PAGES.includes(p))start=p;}catch(e){} history.replaceState(null,'','#'+start);}
 route(); renderSheet(); applySheet();

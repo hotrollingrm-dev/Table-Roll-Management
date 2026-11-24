@@ -14,7 +14,7 @@ window.TRM_SCENE=(function(){
   const H={onPick:null,onHover:null};
 
   function themeMats(){
-    scene.background=lin(css('--scene'));
+    scene.background=null; // ambient page ground shows through (HRM house style)
     const set=(k,c,o)=>{ if(!mats[k]) mats[k]=new THREE.MeshStandardMaterial(Object.assign({color:0xffffff,metalness:.35,roughness:.55},o)); mats[k].color.copy(lin(c)); };
     set('floor',css('--floor'),{metalness:0,roughness:1});
     set('steelDark',css('--steel-dark'),{metalness:.6,roughness:.45});
@@ -25,7 +25,7 @@ window.TRM_SCENE=(function(){
     set('housing',css('--housing'),{metalness:.15,roughness:.55,transparent:true,opacity:.42,depthWrite:false});
     set('housingLo',css('--housing-lo'),{metalness:.1,roughness:.7,transparent:true,opacity:.5,depthWrite:false});
     if(!mats.roll) mats.roll=new THREE.MeshStandardMaterial({color:0xffffff,metalness:.55,roughness:.38});
-    if(mats.grid) mats.grid.color.copy(lin(css('--grid')));
+    if(mats.grid) mats.grid.color.copy(lin(css('--floor-grid')));
     SEV.ni=lin(css('--steel')); SEV.dim=lin(css('--line-2'));
     [1,2,3,4,5].forEach(k=>SEV[k]=lin(css('--l'+k)));
     if(selMesh){selMesh.material.color.copy(lin(css('--hl')));}
@@ -49,7 +49,7 @@ window.TRM_SCENE=(function(){
   function init(container,handlers){
     Object.assign(H,handlers||{});
     stage=container;
-    renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
+    renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:'high-performance'}); renderer.setClearColor(0x000000,0);
     renderer.setPixelRatio(Math.min(devicePixelRatio,2));
     renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
     renderer.outputEncoding=THREE.sRGBEncoding;
@@ -75,7 +75,7 @@ window.TRM_SCENE=(function(){
     fl(gapL+MID+20,fW*2,(gapL-MID-20)/2,0); fl(MID+20-gapR,fW*2,(gapR+MID+20)/2,0);
     [-1,1].forEach(s=>fl(10,fW-3.5,millX,s*(3.5+(fW-3.5)/2)));
     box(10,0.05,7,mats.pit,millX,-2.6,0); box(10,2.6,0.05,mats.pit,millX,-1.3,-3.5); box(10,2.6,0.05,mats.pit,millX,-1.3,3.5);
-    const grid=new THREE.GridHelper(LEN+40,Math.round((LEN+40)/5),0,0); mats.grid=new THREE.LineBasicMaterial({color:lin(css('--grid')),transparent:true,opacity:.5}); grid.material=mats.grid; grid.position.y=0.005; scene.add(grid);
+    const grid=new THREE.GridHelper(LEN+40,Math.round((LEN+40)/5),0,0); mats.grid=new THREE.LineBasicMaterial({color:lin(css('--floor-grid')),transparent:true,opacity:.6}); grid.material=mats.grid; grid.position.y=0.005; scene.add(grid);
 
     /* rolls: one InstancedMesh per zone (each zone has its own taper profile) */
     ZONES.forEach(z=>{
