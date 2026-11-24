@@ -1,0 +1,240 @@
+<title>Table Roll Redesign Directions</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai+Looped:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+/* Picker page: header + responsive tile grid; each tile hosts a scaled 1280×800 mock of the 3D Layout screen */
+:root{
+  --bg:#EEF1F4; --surface:#FFFFFF; --fg:#18212B; --fg2:#5B6775; --line:#DCE2E8; --accent:#1F6FEB;
+  --l1:#E5484D; --l2:#F76B15; --l3:#F2B600; --l4:#3E7BFA; --l5:#2F9E62; --ni:#AEB7C2;
+  --font:"Noto Sans Thai Looped","Noto Sans Thai",system-ui,sans-serif; --mono:"JetBrains Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0F1318;--surface:#171C22;--fg:#E7ECF1;--fg2:#97A3B0;--line:#262E37;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0F1318;--surface:#171C22;--fg:#E7ECF1;--fg2:#97A3B0;--line:#262E37;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:15px;line-height:1.55}
+.wrap{max-width:1500px;margin:0 auto;padding-block:32px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header h1{font-size:28px;font-weight:600;margin:0 0 6px;text-wrap:balance}
+header p{margin:0;color:var(--fg2);max-width:70ch}
+.legend{display:flex;flex-wrap:wrap;gap:8px 14px;margin:16px 0 26px;font-size:13px;color:var(--fg2)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:12px;height:12px;border-radius:3px;display:inline-block}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,560px),1fr));gap:22px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;cursor:pointer;transition:transform .2s cubic-bezier(.2,.8,.2,1),box-shadow .2s;text-align:left;padding:0;font:inherit;color:inherit}
+.tile:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(15,25,40,.12)}
+.tile:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.frame{position:relative;width:100%;aspect-ratio:16/10;overflow:hidden;background:#ddd}
+.frame .mk{position:absolute;left:0;top:0;width:1280px;height:800px;transform-origin:0 0}
+.meta{padding:14px 16px 16px;display:grid;grid-template-columns:auto 1fr;gap:4px 12px;align-items:baseline}
+.num{font-family:var(--mono);font-size:22px;font-weight:600;color:var(--fg2);grid-row:span 3}
+.meta h2{margin:0;font-size:17px;font-weight:600}
+.meta .from{font-size:12.5px;color:var(--fg2)}
+.meta .idea{font-size:13.5px;grid-column:2}
+.meta .fit{font-size:12.5px;color:var(--fg2);grid-column:2}
+.tag{display:inline-block;font-size:11px;font-weight:600;padding:1px 7px;border-radius:5px;background:var(--line);color:var(--fg2);margin-left:6px;vertical-align:2px}
+.ask{margin-top:30px;padding:18px 20px;border-radius:12px;background:var(--surface);border:1px solid var(--line)}
+.ask b{font-weight:600}
+.overlay{position:fixed;inset:0;background:rgba(10,14,20,.72);z-index:20;display:grid;place-items:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));opacity:0;pointer-events:none;transition:opacity .2s}
+.overlay.on{opacity:1;pointer-events:auto}
+.overlay .box{width:min(100%,1280px);background:var(--surface);border-radius:14px;overflow:hidden;transform:scale(.97);transition:transform .25s cubic-bezier(.2,.8,.2,1)}
+.overlay.on .box{transform:none}
+.overlay .bar{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;gap:10px}
+.overlay .bar b{font-size:15px}
+.overlay button{height:40px;padding:0 16px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:inherit;cursor:pointer}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* ======== shared mock components (themed per direction via --m-* vars) ======== */
+.mk{--m-bg:#E9EEF3;--m-sur:#fff;--m-glass:rgba(255,255,255,.86);--m-fg:#17202A;--m-fg2:#64707E;--m-line:#DDE3E9;--m-acc:#1F6FEB;--m-r:12px;--m-font:var(--font);
+  background:var(--m-bg);color:var(--m-fg);font-family:var(--m-font);font-size:14px;line-height:1.45;overflow:hidden}
+.mk *{box-sizing:border-box}
+.mk .sc{position:absolute;inset:0}
+.mk .nav{position:absolute;left:0;right:0;top:0;height:58px;display:flex;align-items:center;gap:4px;padding:0 20px;background:var(--m-sur);border-bottom:1px solid var(--m-line);z-index:2}
+.mk .nav .logo{font-weight:700;font-size:15px;margin-right:18px;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.mk .nav .logo i{width:22px;height:22px;border-radius:6px;background:var(--m-acc);display:inline-block}
+.mk .nav a{position:relative;padding:0 11px;height:58px;display:flex;align-items:center;color:var(--m-fg2);font-size:13.5px;white-space:nowrap}
+.mk .nav a.on{color:var(--m-fg);font-weight:600}
+.mk .nav a.on::after{content:"";position:absolute;left:11px;right:11px;bottom:0;height:3px;border-radius:3px 3px 0 0;background:var(--m-acc)}
+.mk .nav .sp{flex:1}
+.mk .nav .user{width:32px;height:32px;border-radius:50%;background:var(--m-line)}
+.mk .panel{position:absolute;background:var(--m-glass);backdrop-filter:blur(16px);border:1px solid var(--m-line);border-radius:var(--m-r);box-shadow:0 8px 28px rgba(20,30,45,.10);z-index:2}
+.mk .h{font-size:11px;letter-spacing:.7px;text-transform:uppercase;color:var(--m-fg2);font-weight:600}
+.mk .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.mk .sev{display:inline-grid;place-items:center;min-width:22px;height:22px;border-radius:6px;color:#fff;font-family:var(--mono);font-size:12px;font-weight:600;padding:0 5px}
+.mk .s1{background:var(--l1)}.mk .s2{background:var(--l2)}.mk .s3{background:var(--l3);color:#2A2000}.mk .s4{background:var(--l4)}.mk .s5{background:var(--l5)}.mk .sN{background:transparent;color:var(--m-fg2);border:1.5px dashed var(--ni)}
+.mk .bar{display:flex;height:6px;border-radius:3px;overflow:hidden;background:var(--m-line)}
+.mk .bar b{display:block}
+.mk .btn{height:38px;padding:0 14px;border-radius:9px;border:1px solid var(--m-line);background:var(--m-sur);color:var(--m-fg);font-size:13px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.mk .btn.pri{background:var(--m-acc);border-color:var(--m-acc);color:#fff;font-weight:600}
+.mk .chip{height:40px;border-radius:9px;border:1px solid var(--m-line);background:var(--m-sur);display:flex;align-items:center;justify-content:center;gap:6px;font-family:var(--mono);font-size:13px;position:relative}
+.mk .chip::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--c)}
+.mk .chip.ni::before{background:transparent;border:1.5px dashed var(--ni)}
+.mk .seg{display:inline-flex;padding:3px;border-radius:9px;background:var(--m-line);gap:2px}
+.mk .seg span{padding:4px 10px;border-radius:7px;font-size:12px;color:var(--m-fg2)}
+.mk .seg span.on{background:var(--m-sur);color:var(--m-fg);font-weight:600}
+.mk .search{height:40px;border-radius:10px;border:1px solid var(--m-line);background:var(--m-sur);display:flex;align-items:center;gap:8px;padding:0 12px;color:var(--m-fg2);font-size:13px}
+.mk .fchip{height:30px;padding:0 10px;border-radius:8px;border:1px solid var(--m-line);font-size:12px;display:inline-flex;align-items:center;gap:6px;color:var(--m-fg2);background:var(--m-sur)}
+.mk .fchip.on{border-color:var(--m-acc);color:var(--m-acc);background:color-mix(in srgb,var(--m-acc) 8%,var(--m-sur))}
+.mk .row{display:grid;grid-template-columns:24px 58px 1fr 64px;gap:10px;align-items:center;height:40px;border-bottom:1px solid var(--m-line);font-size:13px}
+.mk .kv{display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--m-line)}
+.mk .kv span{color:var(--m-fg2)}
+.mk .spark{display:flex;gap:3px;align-items:flex-end;height:26px}
+.mk .spark i{width:10px;border-radius:2px}
+.mk .ctrl{position:absolute;display:flex;flex-direction:column;gap:6px;z-index:2}
+.mk .ctrl i{width:40px;height:40px;border-radius:10px;background:var(--m-glass);border:1px solid var(--m-line);display:block;backdrop-filter:blur(10px)}
+.mk .zc{border-radius:10px;border:1px solid var(--m-line);background:var(--m-sur);padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.mk .zc.on{border-color:var(--m-acc);box-shadow:0 0 0 2px color-mix(in srgb,var(--m-acc) 25%,transparent)}
+.mk .zc .t{display:flex;justify-content:space-between;align-items:baseline}
+.mk .zc .t b{font-size:16px}
+.mk .zc .n{font-family:var(--mono);font-size:12px;color:var(--m-fg2)}
+.mk .lv{display:flex;gap:6px;font-family:var(--mono);font-size:11px;color:var(--m-fg2)}
+.mk .lv em{font-style:normal;display:inline-flex;align-items:center;gap:3px}
+.mk .lv em::before{content:"";width:7px;height:7px;border-radius:2px;background:var(--c)}
+.mk .act{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.mk .act div{height:56px;border-radius:9px;border:1px solid var(--m-line);background:var(--m-sur);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px;color:var(--m-fg2);text-align:center;line-height:1.15}
+.mk .act div svg{width:18px;height:18px;stroke:var(--m-fg);fill:none;stroke-width:1.7}
+.mk .act div.pri{background:var(--m-acc);border-color:var(--m-acc);color:#fff}
+.mk .act div.pri svg{stroke:#fff}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Table Roll Management · 10 แนวทางออกแบบใหม่</h1>
+    <p>ทุกภาพคือหน้าจอ 3D Layout เดียวกัน ใช้ข้อมูลตัวอย่างชุดเดียวกัน (239 ลูก, Zone A–F) ต่างกันแค่การจัดวาง ความหนาแน่น สี และวิธีแสดง severity ภาพ 3D ในนี้เป็นภาพร่าง ตำแหน่งลูกจริงยังมาจากโมเดลเดิม 100% · กดที่การ์ดเพื่อเปิดดูเต็มจอ</p>
+    <div class="legend">
+      <span><i style="background:var(--l1)"></i>1 Critical</span><span><i style="background:var(--l2)"></i>2 High</span><span><i style="background:var(--l3)"></i>3 Medium</span><span><i style="background:var(--l4)"></i>4 Low</span><span><i style="background:var(--l5)"></i>5 Normal</span><span><i style="border:1.5px dashed var(--ni)"></i>Not inspected</span>
+      <span>· ข้อมูล severity เป็นตัวอย่างสำหรับเทียบดีไซน์เท่านั้น</span>
+    </div>
+  </header>
+  <div class="grid" id="grid"></div>
+  <div class="ask"><b>เลือกเบอร์ที่ชอบ</b> (เลือกได้มากกว่า 1 หรือผสม เช่น “เลย์เอาต์ 4 + สี 1”) แล้วจะสร้างของจริงต่อจากโค้ด 3D เดิม โดยไม่แตะตำแหน่งลูกทั้ง 239 ลูก</div>
+</div>
+
+<div class="overlay" id="ov" role="dialog" aria-modal="true" aria-label="ดูแบบเต็มจอ">
+  <div class="box"><div class="bar"><b id="ovt"></b><button id="ovc">ปิด</button></div><div class="frame" id="ovf"></div></div>
+</div>
+
+<script>
+(function(){
+/* ---------- sample data (deterministic, identical for every direction) ---------- */
+const ZONES=[['A','Mill Approach',95,1],['B','Slab Receiving',51,96],['C','R-Mill Entry',17,147],['D','Mill Feed',8,0],['E','R-Mill Delivery',18,172],['F','Shear Entry',50,190]];
+let seed=7; const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+const ROLLS=[];
+ZONES.forEach(([z,,n,first])=>{for(let i=0;i<n;i++){const r=rnd();let s=r<.28?0:r<.33?1:r<.41?2:r<.55?3:r<.72?4:5;
+  ROLLS.push({z,id:z==='D'?(i<4?'EN'+(4-i):'DL'+(i-3)):String(first+i),s,age:Math.round(40+rnd()*900)});}});
+const SC={0:'var(--ni)',1:'var(--l1)',2:'var(--l2)',3:'var(--l3)',4:'var(--l4)',5:'var(--l5)'};
+const stat=z=>{const a=[0,0,0,0,0,0];ROLLS.filter(r=>!z||r.z===z).forEach(r=>a[r.s]++);return a;};
+const NAV=['Dashboard','3D Layout','Inspection','Damage Report','Replacement Planning','History','Analytics','Inventory','Settings'];
+const SEL=ROLLS.find(r=>r.z==='A'&&r.s===1);
+
+/* ---------- components ---------- */
+const nav=(o={})=>`<div class="nav" style="${o.st||''}"><div class="logo"><i></i>${o.logo||'Table Roll'}</div>${NAV.map(n=>`<a class="${n==='3D Layout'?'on':''}">${o.th&&TH[n]||n}</a>`).join('')}<div class="sp"></div><div class="user"></div></div>`;
+const TH={'Dashboard':'ภาพรวม','3D Layout':'3D Layout','Inspection':'ตรวจสอบ','Damage Report':'แจ้งเสียหาย','Replacement Planning':'แผนเปลี่ยน','History':'ประวัติ','Analytics':'วิเคราะห์','Inventory':'คลังอะไหล่','Settings':'ตั้งค่า'};
+const bar=(a,h)=>`<div class="bar" style="${h?'height:'+h+'px':''}">${[1,2,3,4,5,0].map(k=>`<b style="flex:${a[k]};background:${SC[k]}${k===0?';opacity:.55':''}"></b>`).join('')}</div>`;
+const lv=a=>`<div class="lv">${[1,2,3,4,5].map(k=>`<em style="--c:${SC[k]}">${a[k]}</em>`).join('')}<em style="--c:transparent;outline:1px dashed var(--ni);outline-offset:-1px">${a[0]}</em></div>`;
+const zcard=([z,name,n],on,o={})=>{const a=stat(z);return `<div class="zc ${on?'on':''}" style="${o.st||''}"><div class="t"><b>${z}</b><span class="n">${n} ลูก</span></div>${o.name?`<div style="font-size:12px;color:var(--m-fg2);margin-top:-4px">${name}</div>`:''}${bar(a)}${lv(a)}</div>`;};
+const chips=(z,cols,n)=>`<div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:6px">${ROLLS.filter(r=>r.z===z).slice(0,n).map(r=>`<div class="chip ${r.s?'':'ni'}" style="--c:${SC[r.s]}${r===SEL?';border-color:var(--m-acc);box-shadow:0 0 0 2px color-mix(in srgb,var(--m-acc) 30%,transparent)':''}">${r.id}</div>`).join('')}</div>`;
+const list=(z,n)=>ROLLS.filter(r=>r.z===z&&r.s).sort((a,b)=>a.s-b.s).slice(0,n).map(r=>`<div class="row"><span class="sev s${r.s}">${r.s}</span><b class="mono">#${r.id}</b><span style="color:var(--m-fg2);font-size:12px">${['','Crack · spalling','Surface wear','Bearing noise','Minor scratch','—'][r.s]}</span><span class="mono" style="text-align:right;color:var(--m-fg2)">${r.age} d</span></div>`).join('');
+const filters=`<div style="display:flex;gap:6px;flex-wrap:wrap"><span class="fchip on">Level 1–2</span><span class="fchip">มีความเสียหาย</span><span class="fchip">อยู่ในแผนเปลี่ยน</span><span class="fchip">ยังไม่ตรวจ</span></div>`;
+const pager=`<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--m-fg2)"><span class="mono">1–24 จาก 95</span><span style="display:flex;gap:4px"><span class="fchip">‹</span><span class="fchip on">1</span><span class="fchip">2</span><span class="fchip">3</span><span class="fchip">4</span><span class="fchip">›</span></span></div>`;
+const ICON={i:'<path d="M9 11l3 3 8-8"/><path d="M20 12v7a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h11"/>',d:'<path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17v.5"/>',r:'<path d="M4 12a8 8 0 0 1 14-5l2 2M20 12a8 8 0 0 1-14 5l-2-2"/><path d="M20 4v5h-5M4 20v-5h5"/>',h:'<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>',p:'<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>'};
+const actions=(o={})=>`<div class="act">${[['i','บันทึกตรวจ',1],['d','แจ้งเสียหาย'],['r','เปลี่ยนลูก'],['h','ประวัติ'],['p','เข้าแผน']].map(([k,t,p])=>`<div class="${p?'pri':''}"><svg viewBox="0 0 24 24">${ICON[k]}</svg>${t}</div>`).join('')}</div>`;
+const detail=(o={})=>`<div style="display:flex;gap:12px;align-items:flex-start"><span class="sev s1" style="height:44px;min-width:44px;font-size:20px;border-radius:10px">1</span><div style="flex:1"><div class="h">Position · Zone A</div><div class="mono" style="font-size:30px;font-weight:600;line-height:1.05">#${SEL.id}</div><div style="font-size:12.5px;color:var(--m-fg2)">Physical ID <span class="mono">TR-A-0214</span> · Critical</div></div></div>
+ <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px">${[['ติดตั้ง','12 มี.ค. 2025'],['อายุใช้งาน',SEL.age+' วัน'],['แผนเปลี่ยน','รออนุมัติ']].map(([k,v])=>`<div style="border:1px solid var(--m-line);border-radius:9px;padding:8px 10px;background:var(--m-sur)"><div style="font-size:11px;color:var(--m-fg2)">${k}</div><div style="font-size:13.5px;font-weight:600">${v}</div></div>`).join('')}</div>
+ <div><div class="h" style="margin-bottom:6px">Severity history</div><div class="spark">${[5,5,4,4,3,3,2,1].map(s=>`<i style="height:${(6-s)*5+4}px;background:${SC[s]}"></i>`).join('')}</div></div>
+ ${o.noact?'':actions()}`;
+
+/* ---------- stylised 3D scene: real zone proportions, severity on each roll ---------- */
+function scene(o={}){
+  const W=1280,H=800, x0=o.x0??60, x1=o.x1??1220, y0=o.y0??600, y1=o.y1??300, sk=o.skew??46;
+  const L=ROLLS.length; let s=`<svg class="sc" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">`;
+  s+=`<defs><linearGradient id="fl${o.k}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${o.sky||'#DCE5EE'}"/><stop offset="1" stop-color="${o.floor||'#C9D4DF'}"/></linearGradient></defs><rect width="${W}" height="${H}" fill="url(#fl${o.k})"/>`;
+  if(o.gridc){for(let i=0;i<30;i++){const gx=i*48;s+=`<line x1="${gx}" y1="0" x2="${gx-200}" y2="${H}" stroke="${o.gridc}" stroke-width="1"/>`;} }
+  const pos=t=>[x0+(x1-x0)*t, y0+(y1-y0)*t];
+  const [ax,ay]=pos(0),[bx,by]=pos(1);
+  s+=`<polygon points="${ax-10},${ay+sk*.6} ${bx+10},${by+sk*.6} ${bx+10},${by-sk*.6} ${ax-10},${ay-sk*.6}" fill="${o.bed||'#3C4652'}" opacity=".9"/>`;
+  ROLLS.forEach((r,i)=>{const t=i/(L-1);const [x,y]=pos(t);const w=o.rw??3.2;
+    const c=o.mono?(r.s===1?'var(--l1)':r.s===2?'var(--l2)':(o.rollc||'#8B96A2')):(r.s?SC[r.s]:(o.rollc||'#8B96A2'));
+    s+=`<line x1="${x-8}" y1="${y+sk*.55}" x2="${x+8}" y2="${y-sk*.55}" stroke="${c}" stroke-width="${w}" stroke-linecap="round" ${r===SEL?`style="filter:drop-shadow(0 0 6px ${o.glow||'#FFD43B'})"`:''}/>`;
+  });
+  const mi=ROLLS.findIndex(r=>r.z==='D')+4; const [mx,my]=pos(mi/(L-1));
+  s+=`<rect x="${mx-30}" y="${my-130}" width="60" height="120" rx="4" fill="${o.mill||'#3D6DB6'}" opacity=".35"/><rect x="${mx-38}" y="${my-150}" width="76" height="40" rx="4" fill="${o.mill||'#3D6DB6'}" opacity=".5"/>`;
+  if(o.zlabels!==false){ZONES.forEach(([z])=>{const idx=ROLLS.findIndex(r=>r.z===z), n=ROLLS.filter(r=>r.z===z).length;const [zx,zy]=pos((idx+n/2)/(L-1));
+    s+=`<g transform="translate(${zx},${zy-sk-26})"><rect x="-13" y="-13" width="26" height="26" rx="7" fill="${o.ztag||'#fff'}" stroke="${o.zline||'#CFD7E0'}"/><text text-anchor="middle" y="5" font-size="14" font-weight="700" fill="${o.ztagt||'#1B2430'}" font-family="Noto Sans Thai Looped, sans-serif">${z}</text></g>`;});}
+  const [sx,sy]=pos(i2t(ROLLS.indexOf(SEL)));
+  s+=`<circle cx="${sx}" cy="${sy}" r="16" fill="none" stroke="${o.glow||'#FFD43B'}" stroke-width="3"/>`;
+  return s+'</svg>';
+  function i2t(i){return i/(L-1);}
+}
+const ctrls=(st)=>`<div class="ctrl" style="${st}"><i></i><i></i><i></i></div>`;
+const A=ZONES[0];
+
+/* ---------- 10 directions ---------- */
+const D=[
+{n:'Control Room Calm',from:'Apple Maps, iPadOS floating panels',idea:'3D เต็มจอใต้ top nav, แถบ zone ลอยด้านล่างกลาง, selector กับ detail ซ้อนเป็นแผงเดียวทางขวา พับเก็บได้',fit:'ปลอดภัยที่สุด · ดีทั้ง PC/Tablet',tag:'safe',
+ css:'',
+ html:()=>scene({k:1})+nav()+
+ `<div class="panel" style="left:50%;transform:translateX(-50%);bottom:18px;padding:8px;display:flex;gap:6px">${ZONES.map((z,i)=>zcard(z,i===0,{st:'width:118px;padding:8px 10px'})).join('')}</div>`+
+ `<div class="panel" style="right:18px;top:76px;width:372px;bottom:150px;padding:16px;display:flex;flex-direction:column;gap:12px">${detail()}</div>`+ctrls('left:18px;top:76px')},
+{n:'Zone Rail Cards',from:'Linear filters + Stripe cards',idea:'การ์ด zone 6 ใบเรียงใต้ nav เห็น L1–L5/ยังไม่ตรวจครบทุกโซนในแวบเดียว, selector เป็น drawer ซ้าย',fit:'ดีบน PC จอกว้าง · แท็บเล็ตต้องเลื่อนการ์ด',
+ html:()=>scene({k:2,y0:640,y1:380})+nav()+
+ `<div style="position:absolute;left:18px;right:18px;top:72px;display:grid;grid-template-columns:repeat(6,1fr);gap:10px;z-index:2">${ZONES.map((z,i)=>zcard(z,i===0,{name:1,st:'background:var(--m-glass);backdrop-filter:blur(14px)'})).join('')}</div>`+
+ `<div class="panel" style="left:18px;top:190px;bottom:18px;width:340px;padding:14px;display:flex;flex-direction:column;gap:10px"><div class="search">⌕ ค้นหา Roll ID</div>${filters}<div class="seg"><span class="on">Grid</span><span>List</span></div>${chips('A',4,24)}${pager}</div>`+
+ `<div class="panel" style="right:18px;top:190px;width:350px;padding:16px;display:flex;flex-direction:column;gap:12px">${detail()}</div>`},
+{n:'Inspector Bottom Sheet',from:'Google Maps mobile, One UI sheets',idea:'แท็บเล็ตมาก่อน: 3D ด้านบน, bottom sheet มีแท็บ โซน / ลูก / รายละเอียด ลากขึ้นลงได้, ปุ่มใหญ่กดด้วยถุงมือ',fit:'ดีมากบน Tablet/มือถือ · PC ดูโล่ง',
+ html:()=>scene({k:3,y0:430,y1:200})+nav({th:1})+
+ `<div class="panel" style="left:18px;right:18px;bottom:0;height:330px;border-radius:18px 18px 0 0;padding:10px 20px 18px;display:flex;flex-direction:column;gap:12px"><div style="width:44px;height:5px;border-radius:3px;background:var(--m-line);margin:0 auto"></div><div class="seg" style="align-self:flex-start"><span>โซน</span><span class="on">ลูกในโซน A</span><span>รายละเอียด #${SEL.id}</span></div>
+ <div style="display:grid;grid-template-columns:1.1fr 1fr;gap:20px;flex:1"><div style="display:flex;flex-direction:column;gap:10px">${filters}${chips('A',8,24)}${pager}</div><div style="display:flex;flex-direction:column;gap:10px">${detail()}</div></div></div>`},
+{n:'Severity Heat Strip',from:'Audio waveform scrubber, Tesla trip bar',idea:'แถบ 239 ช่องเรียงตามไลน์จริงพาดเต็มจอ เห็นทั้งไลน์ว่าลูกไหนแดงทันที แตะช่องไหนกล้องบินไปลูกนั้น',fit:'ตอบ “มีอะไรผิดปกติ?” เร็วที่สุด · แนวคิดใหม่',tag:'bold',
+ html:()=>scene({k:4,y0:600,y1:330})+nav()+
+ `<div class="panel" style="left:18px;right:18px;top:74px;padding:12px 14px;display:flex;flex-direction:column;gap:8px"><div style="display:flex;justify-content:space-between;align-items:center"><span class="h">ทั้งไลน์ · 239 ลูก · เรียงตามทิศ slab →</span>${lv(stat())}</div>
+ <div style="display:flex;gap:1.5px;height:34px">${ROLLS.map(r=>`<i style="flex:1;border-radius:2px;background:${SC[r.s]};${r.s?'':'opacity:.45'};${r===SEL?'outline:2px solid #17202A;outline-offset:1px':''}"></i>`).join('')}</div>
+ <div style="display:flex;font-family:var(--mono);font-size:11px;color:var(--m-fg2)">${ZONES.map(([z,,n])=>`<span style="flex:${n};border-left:1px solid var(--m-line);padding-left:4px">${z}</span>`).join('')}</div></div>`+
+ `<div class="panel" style="right:18px;top:200px;width:360px;padding:16px;display:flex;flex-direction:column;gap:12px">${detail()}</div>`+ctrls('left:18px;bottom:18px;flex-direction:row')},
+{n:'Split Workbench',from:'Linear, Jira detail split',idea:'3D ซ้าย 64% เป็น “แผนที่”, ขวาเป็นคอลัมน์ทำงาน: ตารางลูกเรียงตาม severity พร้อม filter, ด้านล่างเป็น detail',fit:'งานวางแผนบน PC · มือถือต้องสลับเป็นแท็บ',
+ html:()=>scene({k:5,x1:780,y0:640,y1:280})+nav()+
+ `<div style="position:absolute;right:0;top:58px;bottom:0;width:470px;background:var(--m-sur);border-left:1px solid var(--m-line);padding:16px 18px;display:flex;flex-direction:column;gap:12px;z-index:2"><div style="display:flex;gap:6px">${ZONES.map(([z],i)=>`<span class="fchip ${i===0?'on':''}" style="width:44px;justify-content:center;font-weight:700">${z}</span>`).join('')}</div><div class="search">⌕ ค้นหา Roll ID</div>${filters}<div style="display:flex;justify-content:space-between"><span class="h">เรียงตาม severity</span><div class="seg"><span>Grid</span><span class="on">List</span></div></div><div>${list('A',6)}</div>${pager}<div style="border-top:1px solid var(--m-line);padding-top:12px;display:flex;flex-direction:column;gap:10px">${detail({noact:1})}</div></div>`+
+ `<div class="panel" style="left:18px;bottom:18px;padding:10px 12px;display:flex;gap:10px">${ZONES.map(z=>`<div style="width:86px">${bar(stat(z[0]))}<div class="mono" style="font-size:11px;margin-top:4px">${z[0]} · ${z[2]}</div></div>`).join('')}</div>`},
+{n:'Command Palette',from:'Raycast, Arc browser',idea:'หน้าจอแทบว่าง มีแค่ 3D, พิมพ์เลขลูกหรือ “L1 zone B” ในช่องค้นหากลางจอ ผลขึ้นพร้อมสี, zone เป็น chip เล็ก',fit:'เร็วสำหรับคนรู้เลขลูก · มือใหม่ต้องเรียนรู้',
+ html:()=>scene({k:6,y0:660,y1:400})+nav()+
+ `<div class="panel" style="left:50%;transform:translateX(-50%);top:110px;width:560px;padding:10px;display:flex;flex-direction:column;gap:6px"><div class="search" style="height:52px;font-size:16px;color:var(--m-fg);border-color:var(--m-acc)"><span style="color:var(--m-fg2)">⌕</span> L1 zone A<span style="margin-left:auto" class="fchip">⌘K</span></div>${list('A',4)}<div style="font-size:12px;color:var(--m-fg2);padding:4px 2px">↵ เปิดลูก · Tab ดู detail · ลอง “#152”, “ยังไม่ตรวจ”, “แผนเปลี่ยน”</div></div>`+
+ `<div style="position:absolute;left:50%;transform:translateX(-50%);bottom:18px;display:flex;gap:8px;z-index:2">${ZONES.map(([z,,n],i)=>`<span class="panel" style="position:static;padding:6px 12px;display:flex;gap:8px;align-items:center;${i===0?'border-color:var(--m-acc)':''}"><b>${z}</b><span class="mono" style="font-size:12px;color:var(--m-fg2)">${n}</span><span class="sev s1" style="height:18px;min-width:18px;font-size:10px">${stat(z)[1]}</span></span>`).join('')}</div>`},
+{n:'One UI Large Type',from:'Samsung One UI, Apple Health',idea:'ตัวเลขใหญ่ ปุ่มใหญ่ โค้งนุ่ม: header ใหญ่บอก “Zone A มี Critical 4 ลูก”, การ์ด zone สูงกดง่าย เหมาะใส่ถุงมือ',fit:'Operator หน้างาน · ข้อมูลต่อจอน้อยลง',
+ css:'--m-r:22px;--m-bg:#EEF2F6',
+ html:()=>scene({k:7,x0:440,y0:700,y1:420,rw:4})+nav({th:1})+
+ `<div style="position:absolute;left:28px;top:86px;z-index:2"><div style="font-size:15px;color:var(--m-fg2)">Zone A · Mill Approach</div><div style="font-size:44px;font-weight:700;line-height:1.1">Critical <span class="mono" style="color:var(--l1)">${stat('A')[1]}</span> ลูก</div><div style="font-size:15px;color:var(--m-fg2)">ยังไม่ตรวจ ${stat('A')[0]} จาก 95 ลูก</div></div>`+
+ `<div style="position:absolute;left:28px;top:250px;width:380px;display:grid;grid-template-columns:1fr 1fr;gap:12px;z-index:2">${ZONES.map((z,i)=>`<div class="panel" style="position:static;padding:16px;${i===0?'border:2px solid var(--m-acc)':''}"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:26px">${z[0]}</b><span class="sev s1" style="height:28px;min-width:28px;font-size:14px">${stat(z[0])[1]}</span></div><div class="mono" style="color:var(--m-fg2);margin:2px 0 8px">${z[2]} ลูก</div>${bar(stat(z[0]),8)}</div>`).join('')}</div>`+
+ `<div class="panel" style="right:22px;top:86px;width:380px;padding:20px;display:flex;flex-direction:column;gap:14px">${detail()}</div>`},
+{n:'Blueprint Engineering',from:'IHI GA drawings, CAD viewers',idea:'โทนพิมพ์เขียวฟ้าเทา เส้นบาง ตัวเลข mono มีกริดเหมือนแบบ ตารางสเปกแบบ title block ให้ความรู้สึกเอกสารวิศวกรรม',fit:'ทีม maintenance/วิศวกร · ดูเป็นทางการ',
+ css:'--m-bg:#E8EEF4;--m-sur:#F7FAFC;--m-glass:rgba(247,250,252,.94);--m-line:#BFCCD9;--m-acc:#1D4E89;--m-r:4px',
+ html:()=>scene({k:8,sky:'#E3EBF3',floor:'#D6E1EB',gridc:'rgba(29,78,137,.08)',bed:'#5A6B7D',mill:'#1D4E89',ztag:'#F7FAFC',zline:'#1D4E89'})+nav({st:'background:#F7FAFC;border-bottom:1.5px solid #1D4E89'})+
+ `<div class="panel" style="left:18px;top:76px;width:300px;padding:0;overflow:hidden"><div style="display:grid;grid-template-columns:40px 1fr 44px;font-family:var(--mono);font-size:12px">${ZONES.map(([z,name,n],i)=>`<div style="padding:9px 0;text-align:center;font-weight:700;border-bottom:1px solid var(--m-line);border-right:1px solid var(--m-line);${i===0?'background:#1D4E89;color:#fff':''}">${z}</div><div style="padding:6px 10px;border-bottom:1px solid var(--m-line)">${bar(stat(z))}<div style="margin-top:4px;color:var(--m-fg2)">${name}</div></div><div style="padding:9px 6px;text-align:right;border-bottom:1px solid var(--m-line)">${n}</div>`).join('')}</div></div>`+
+ `<div class="panel" style="right:18px;top:76px;width:380px;padding:16px;display:flex;flex-direction:column;gap:10px">${detail()}<div style="font-family:var(--mono);font-size:11px;border:1px solid var(--m-line)">${[['DWG','LM-B52694'],['TYPE','Double tapered'],['MOTOR','AC 3.7 kW'],['Ø END/MID','300 / 262']].map(([k,v])=>`<div style="display:flex;border-bottom:1px solid var(--m-line)"><span style="width:96px;padding:4px 8px;border-right:1px solid var(--m-line);color:var(--m-fg2)">${k}</span><span style="padding:4px 8px">${v}</span></div>`).join('')}</div></div>`},
+{n:'Night Shift',from:'Grafana, F1 timing screens',idea:'โหมดมืดสำหรับห้องควบคุมกะดึก ลูกเป็นสีเทาเข้ม เฉพาะลูกที่มีปัญหาเรืองแสงสีของระดับ เห็นจุดร้อนชัดสุด',fit:'ห้อง control แสงน้อย · ไม่ตรงโจทย์ light theme',tag:'bold',
+ css:'--m-bg:#0E1318;--m-sur:#161C23;--m-glass:rgba(22,28,35,.9);--m-fg:#E6ECF2;--m-fg2:#8C99A7;--m-line:#27303A;--m-acc:#4C8DFF',
+ html:()=>scene({k:9,sky:'#0E1318',floor:'#141A21',bed:'#1E252D',rollc:'#3A434D',mono:1,mill:'#4C8DFF',ztag:'#161C23',zline:'#27303A',ztagt:'#E6ECF2',glow:'#FF5A5F'})+nav()+
+ `<div class="panel" style="left:18px;top:76px;width:250px;padding:12px;display:flex;flex-direction:column;gap:8px">${ZONES.map((z,i)=>zcard(z,i===0,{st:'padding:8px 10px'})).join('')}</div>`+
+ `<div class="panel" style="right:18px;top:76px;width:360px;padding:16px;display:flex;flex-direction:column;gap:12px">${detail()}</div>`},
+{n:'Warm Steel',from:'Teenage Engineering, Leica UI',idea:'พื้นเทาอุ่นแบบโลหะขัด สีเน้นทองแดง, zone เป็น stack แนวตั้งซ้ายพร้อมโดนัทเล็ก, ตัวหนังสือนุ่ม ดูพรีเมียมไม่ใช่ SaaS',fit:'เอกลักษณ์ชัด · สีเน้นทองแดงต้องระวังชนกับสี severity ส้ม',
+ css:'--m-bg:#ECE9E4;--m-sur:#FBFAF8;--m-glass:rgba(251,250,248,.92);--m-line:#DDD8D0;--m-acc:#8A5A3B;--m-fg2:#6E675E',
+ html:()=>scene({k:10,sky:'#ECE9E4',floor:'#DCD6CD',bed:'#4A443E',mill:'#8A5A3B',ztag:'#FBFAF8',zline:'#DDD8D0'})+nav({st:'background:#FBFAF8'})+
+ `<div class="panel" style="left:18px;top:76px;width:230px;padding:10px;display:flex;flex-direction:column;gap:4px">${ZONES.map((z,i)=>{const a=stat(z[0]),T=z[2];let acc=0;const seg=[1,2,3,4,5,0].map(k=>{const st=acc/T*100;acc+=a[k];return `${SC[k]} ${st}% ${acc/T*100}%`;}).join(',');return `<div style="display:flex;align-items:center;gap:10px;padding:8px;border-radius:10px;${i===0?'background:var(--m-sur);box-shadow:0 1px 3px rgba(0,0,0,.08)':''}"><span style="width:34px;height:34px;border-radius:50%;background:conic-gradient(${seg});display:grid;place-items:center"><span style="width:22px;height:22px;border-radius:50%;background:var(--m-sur);display:grid;place-items:center;font-weight:700;font-size:12px">${z[0]}</span></span><span style="flex:1;font-size:13px">${z[1]}</span><span class="mono" style="font-size:12px;color:var(--m-fg2)">${z[2]}</span></div>`;}).join('')}</div>`+
+ `<div class="panel" style="right:18px;top:76px;width:370px;padding:16px;display:flex;flex-direction:column;gap:12px">${detail()}</div>`+
+ `<div class="panel" style="left:264px;bottom:18px;width:520px;padding:12px;display:flex;flex-direction:column;gap:8px"><div style="display:flex;gap:8px;align-items:center"><div class="search" style="flex:1">⌕ ค้นหา Roll ID</div><div class="seg"><span class="on">Grid</span><span>List</span></div></div>${chips('A',8,16)}</div>`},
+];
+
+/* ---------- render ---------- */
+const grid=document.getElementById('grid');
+const mk=(d)=>{const m=document.createElement('div');m.className='mk';m.setAttribute('style',d.css||'');m.innerHTML=d.html();return m;};
+D.forEach((d,i)=>{
+  const b=document.createElement('button');b.className='tile';b.type='button';
+  b.innerHTML=`<div class="frame"></div><div class="meta"><span class="num">${String(i+1).padStart(2,'0')}</span><h2>${d.n}${d.tag?`<span class="tag">${d.tag==='safe'?'ปลอดภัย':'กล้า'}</span>`:''}</h2><span class="from">อ้างอิง: ${d.from}</span><span class="idea">${d.idea}</span><span class="fit">${d.fit}</span></div>`;
+  b.querySelector('.frame').appendChild(mk(d));
+  b.onclick=()=>open(i);
+  grid.appendChild(b);
+});
+const ov=document.getElementById('ov'),ovf=document.getElementById('ovf');
+function open(i){ovf.innerHTML='';ovf.appendChild(mk(D[i]));document.getElementById('ovt').textContent=String(i+1).padStart(2,'0')+' · '+D[i].n;ov.classList.add('on');fit();document.getElementById('ovc').focus();}
+function close(){ov.classList.remove('on');}
+document.getElementById('ovc').onclick=close; ov.onclick=e=>{if(e.target===ov)close();}; addEventListener('keydown',e=>{if(e.key==='Escape')close();});
+function fit(){document.querySelectorAll('.frame').forEach(f=>{const m=f.querySelector('.mk');if(m)m.style.transform=`scale(${f.clientWidth/1280})`;});}
+new ResizeObserver(fit).observe(document.body); fit();
+})();
+</script>
