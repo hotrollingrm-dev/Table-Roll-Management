@@ -161,7 +161,7 @@ window.TRM_SCENE=(function(){
     ZONES.forEach(z=>{z.lbl=label('<i>'+z.id+'</i>'+z.name,'',(z.x0+z.x1)/2,TOP+LY[z.id],z.id==='D'?0:-2.2);});
 
     /* selection + hover overlays (one mesh each, geometry swapped per zone) */
-    selMesh=new THREE.Mesh(ZONES[0].geo,new THREE.MeshBasicMaterial({color:lin(css('--hl')),transparent:true,opacity:.5,side:THREE.BackSide,depthWrite:false}));
+    selMesh=new THREE.Mesh(ZONES[0].geo,new THREE.MeshBasicMaterial({color:lin(css('--hl')),transparent:true,opacity:.55,side:THREE.BackSide,depthWrite:false}));
     selMesh.scale.set(1.22,1.22,1.02); selMesh.visible=false; scene.add(selMesh);
     hovMesh=new THREE.Mesh(ZONES[0].geo,new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.55,side:THREE.BackSide,depthWrite:false}));
     hovMesh.scale.set(1.14,1.14,1.01); hovMesh.visible=false; scene.add(hovMesh);
@@ -238,7 +238,6 @@ window.TRM_SCENE=(function(){
     if(fly){const t=Math.min((now-fly.t0)/fly.ms,1),k=ease(t);cam.position.lerpVectors(fly.fp,fly.tp,k);ctl.target.lerpVectors(fly.ft,fly.tt,k);if(t>=1)fly=null;needs=true;}
     if(Math.abs(viewOff-viewOffT)>0.3){viewOff+=(viewOffT-viewOff)*Math.min(1,dt*9);applyOffset();needs=true;}
     stepColors(dt);
-    if(sel){const p=.5+.5*Math.sin((now-t0)/320);selMesh.material.opacity=.32+.3*p;selRing.scale.setScalar(1+.12*p);needs=true;}
     ctl.update();
     if(!needs) return; needs=false;
     const cd=cam.position.distanceTo(ctl.target);

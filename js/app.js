@@ -175,7 +175,7 @@ function lvrow(a){return `<div class="lvrow">${[1,2,3,4,5].map(k=>`<span><em>L${
 function renderZones(){
   const all=ST.counts();
   $('#sheetContent').innerHTML=`<div class="tabpane"><div class="zones">${ZONES.map(z=>{const a=ST.counts(z.id);return `<button class="zc" data-z="${z.id}" aria-pressed="${ui.zone===z}"><div class="t"><span class="ztag">${z.id}</span><span class="nm">${esc(z.name)}<small><b>${z.count}</b> ลูก · rolls</small></span></div>${sbar(a)}${lvrow(a)}</button>`;}).join('')}</div>
-  <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap;font-size:13px;color:var(--fg2)"><span>ทั้งไลน์ <b class="mono" style="color:var(--fg)">${ROLLS.length}</b> ลูก · Critical <b class="mono" style="color:var(--l1)">${all[1]}</b> · High <b class="mono" style="color:var(--l2)">${all[2]}</b> · ยังไม่ตรวจ <b class="mono" style="color:var(--fg)">${all[0]}</b></span><button class="btn sm" data-allrolls>ดูลูกทั้งไลน์</button></div></div>`;
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap;font-size:13px;color:var(--fg2)"><span>ทั้งไลน์ <b class="mono" style="color:var(--fg)">${ROLLS.length}</b> ลูก · Critical <b class="mono" style="color:var(--l1)">${all[1]}</b> · High <b class="mono" style="color:var(--l2)">${all[2]}</b> · ยังไม่ตรวจ <b class="mono" style="color:var(--fg)">${all[0]}</b></span><button class="btn sm" data-allrolls>ดูลูกทั้งไลน์</button></div></div>`;
   $$('#sheetContent .zc').forEach(b=>b.onclick=()=>selectZone(zoneOf(b.dataset.z)));
   $('#sheetContent [data-allrolls]').onclick=()=>{ui.zone=null;ui.f.scope='all';ui.pg=0;SC.ready&&SC.fitAll();renderLegend();setTab('rolls');};
 }
@@ -210,7 +210,7 @@ function renderRolls(){
      <select class="fsel" id="selsort"><option value="pos" ${ui.sort==='pos'?'selected':''}>เรียงตามตำแหน่ง</option><option value="sev" ${ui.sort==='sev'?'selected':''}>เรียงตาม Severity</option><option value="age" ${ui.sort==='age'?'selected':''}>เรียงตามอายุใช้งาน</option></select>
      <div class="seg" role="group" aria-label="มุมมอง"><button data-view="grid" aria-pressed="${ui.view==='grid'}" aria-label="Grid">${ic('grid')}</button><button data-view="list" aria-pressed="${ui.view==='list'}" aria-label="List">${ic('list')}</button></div>
    </div>
-   <div class="fl" style="margin-bottom:12px">${lvBtns}<span style="width:6px"></span><button class="fbtn" data-ft="dmg" aria-pressed="${f.dmg}">มีความเสียหาย</button><button class="fbtn" data-ft="plan" aria-pressed="${f.plan}">อยู่ในแผนเปลี่ยน</button>${anyFilter()?'<button class="fbtn" data-clear>ล้าง</button>':''}</div>
+   <div class="fl" style="margin-bottom:12px">${lvBtns}<span style="width:8px"></span><button class="fbtn" data-ft="dmg" aria-pressed="${f.dmg}">มีความเสียหาย</button><button class="fbtn" data-ft="plan" aria-pressed="${f.plan}">อยู่ในแผนเปลี่ยน</button>${anyFilter()?'<button class="fbtn" data-clear>ล้าง</button>':''}</div>
    ${body}
    ${list.length?`<div class="pager"><span class="info">${ui.pg*per+1}–${Math.min(list.length,ui.pg*per+per)} จาก ${list.length} ลูก · ${scopeTxt}</span><div class="pg">${pagerBtns(pages)}</div></div>`:''}
   </div>`;
@@ -253,7 +253,7 @@ function renderDetail(){
   $('#sheetContent').innerHTML=`<div class="tabpane det">
    <div>
      <div class="dhead">${sevBadge(v.level,'big')}<div style="flex:1;min-width:0"><div class="eyebrow">Position ID · Zone ${z.id}</div><div class="pid">${esc(r.id)}</div><div class="sub">${esc(z.name)} · ลูกที่ ${k+1} จาก ${zi.length}${r.side?' · '+(r.side==='entry'?'ฝั่งขาเข้า':'ฝั่งขาออก'):''}</div></div>
-       <div style="display:flex;gap:6px"><button class="iconbtn" data-nav="-1" aria-label="ลูกก่อนหน้า" ${r.i===0?'disabled':''}><svg class="i" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button><button class="iconbtn" data-nav="1" aria-label="ลูกถัดไป" ${r.i===ROLLS.length-1?'disabled':''}><svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button></div></div>
+       <div style="display:flex;gap:8px"><button class="iconbtn" data-nav="-1" aria-label="ลูกก่อนหน้า" ${r.i===0?'disabled':''}><svg class="i" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button><button class="iconbtn" data-nav="1" aria-label="ลูกถัดไป" ${r.i===ROLLS.length-1?'disabled':''}><svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button></div></div>
      <div class="facts">
        <div><span>Physical Roll ID</span><b class="m">${esc(v.phys||'ยังไม่ระบุ')}</b></div>
        <div><span>วันที่ติดตั้ง</span><b>${fmtDate(v.install)}</b></div>
@@ -338,7 +338,7 @@ function pDashboard(){
   const plan=Object.keys(D.plans).length, openD=D.damages.filter(x=>x.status==='open').length;
   const urgent=ROLLS.filter(r=>{const l=ST.level(r.id);return l&&l<=2;}).sort((x,y)=>ST.level(x.id)-ST.level(y.id)||x.i-y.i);
   const recent=timeline().slice(0,8);
-  return pageShell(['ตอนนี้ไลน์เป็นอย่างไร','Dashboard · line status now'],`${ROLLS.length} ลูก · Critical ${a[1]} · High ${a[2]} · ยังไม่ตรวจ ${a[0]} ลูก`,
+  return pageShell(['สถานะไลน์ R-Mill','Line status · Dashboard'],`${ROLLS.length} ลูก · Critical ${a[1]} · High ${a[2]} · ยังไม่ตรวจ ${a[0]} ลูก`,
   `<div class="kpis">
     <button class="kpi ${a[1]?'alert':''}" data-kpi="1"><span>${tile('crit',44)}${bi('วิกฤต · L1','Critical')}</span><b style="color:var(--l1)">${a[1]}<small>ลูก</small></b><small>ต้องจัดการทันที · Act now</small></button>
     <button class="kpi" data-kpi="2"><span>${tile('high',44)}${bi('สูง · L2','High')}</span><b style="color:var(--l2)">${a[2]}<small>ลูก</small></b><small>ควรวางแผนเปลี่ยน · Plan replacement</small></button>
@@ -347,7 +347,7 @@ function pDashboard(){
   </div>
   <div class="cols">
     <div class="card"><h2>ต้องจัดการก่อน <span class="sevname">${urgent.length} ลูก · L1–L2</span></h2>${urgent.length?`<div class="tblwrap"><table class="tbl"><thead><tr><th>ระดับ</th><th>ลูก</th><th>Zone</th><th>ความเสียหาย</th><th>แผน</th><th></th></tr></thead><tbody>${urgent.slice(0,10).map(r=>{const v=ST.roll(r.id);return `<tr><td>${sevBadge(v.level)}</td><td class="mono"><b>${esc(r.id)}</b></td><td>${r.z.id}</td><td>${v.openDmg[0]?esc(v.openDmg[0].type):'—'}</td><td>${v.plan?`<span class="status st-${v.plan.status}">${v.plan.status==='approved'?'อนุมัติ':'วางแผน'} ${fmtDate(v.plan.date)}</span>`:'<span class="sevname">ยังไม่มี</span>'}</td><td style="text-align:right"><button class="linkbtn" data-open="${esc(r.id)}">ดูใน 3D</button></td></tr>`;}).join('')}</tbody></table></div>${urgent.length>10?`<button class="linkbtn" data-kpi="12" style="margin-top:8px">ดูทั้งหมด ${urgent.length} ลูกในหน้า 3D</button>`:''}`:'<div class="emptyst"><b>ไม่มีลูกระดับ Critical หรือ High</b>ลูกที่ตรวจแล้วอยู่ในเกณฑ์ปกติ</div>'}</div>
-    <div class="card"><h2>สถานะแต่ละโซน</h2><div style="display:flex;flex-direction:column;gap:14px">${ZONES.map(z=>{const c=ST.counts(z.id);return `<button class="zc" data-zone="${z.id}" style="min-height:0"><div class="t"><span class="ztag">${z.id}</span><span class="nm">${esc(z.name)}<small>${z.count} ลูก</small></span></div>${sbar(c)}${lvrow(c)}</button>`;}).join('')}</div></div>
+    <div class="card"><h2>สถานะแต่ละโซน</h2><div style="display:flex;flex-direction:column;gap:16px">${ZONES.map(z=>{const c=ST.counts(z.id);return `<button class="zc" data-zone="${z.id}" style="min-height:0"><div class="t"><span class="ztag">${z.id}</span><span class="nm">${esc(z.name)}<small>${z.count} ลูก</small></span></div>${sbar(c)}${lvrow(c)}</button>`;}).join('')}</div></div>
   </div>
   <div class="card"><h2>กิจกรรมล่าสุด</h2>${recent.length?`<div class="tl">${recent.map(tlItem).join('')}</div>`:'<div class="emptyst"><b>ยังไม่มีกิจกรรม</b>เริ่มจากบันทึกผลตรวจในหน้า 3D Layout</div>'}</div>`);
 }
@@ -417,14 +417,14 @@ function pAnalytics(){
   const W=560,rowH=34;
   const dist=`<svg class="chart" viewBox="0 0 ${W} ${ZONES.length*rowH+24}" width="100%" role="img" aria-label="สัดส่วน severity ต่อโซน">${ZONES.map((z,i)=>{const a=ST.counts(z.id),T=z.count;let x=40;return `<text x="0" y="${i*rowH+21}" style="font-weight:600;fill:var(--fg)">${z.id}</text>`+[1,2,3,4,5,0].map(k=>{const w=(W-90)*a[k]/T;const s=`<rect x="${x}" y="${i*rowH+6}" width="${Math.max(0,w-1)}" height="20" rx="3" fill="${k?`var(--l${k})`:'var(--ni)'}" opacity="${k?1:.5}"><title>${z.id} · ${k?'L'+k:'ยังไม่ตรวจ'}: ${a[k]}</title></rect>`;x+=w;return s;}).join('')+`<text x="${W-4}" y="${i*rowH+21}" text-anchor="end">${T}</text>`;}).join('')}</svg>`;
   const weeks=[...Array(8)].map((_,i)=>{const end=Date.now()-(7-i)*7*86400000, st=end-7*86400000;return {lab:new Date(end).toLocaleDateString('th-TH',{day:'numeric',month:'short'}),n:ST.data.inspections.filter(x=>{const t=new Date(x.date).getTime();return t>st&&t<=end;}).length};});
-  const mx=Math.max(4,...weeks.map(w=>w.n)), ch=160, bw=(W-40)/8;
+  const mx=Math.max(4,...weeks.map(w=>w.n)), ch=180, WB=1200, bw=(WB-40)/8;
   const ticks=[0,Math.round(mx/2),mx];
-  const bars=`<svg class="chart" viewBox="0 0 ${W} ${ch+30}" width="100%" role="img" aria-label="จำนวนการตรวจต่อสัปดาห์">${ticks.map(t=>{const y=ch-(t/mx)*(ch-10);return `<line class="gl" x1="30" x2="${W}" y1="${y}" y2="${y}"/><text x="24" y="${y+4}" text-anchor="end">${t}</text>`;}).join('')}${weeks.map((w,i)=>{const h=(w.n/mx)*(ch-10);return `<rect x="${36+i*bw+bw*.18}" y="${ch-h}" width="${bw*.64}" height="${h}" rx="4" fill="var(--accent)" opacity="${i===7?1:.55}"><title>${w.lab}: ${w.n} ครั้ง</title></rect><text x="${36+i*bw+bw/2}" y="${ch+18}" text-anchor="middle">${w.lab}</text>`;}).join('')}</svg>`;
+  const bars=`<svg class="chart" viewBox="0 0 ${WB} ${ch+30}" width="100%" role="img" aria-label="จำนวนการตรวจต่อสัปดาห์">${ticks.map(t=>{const y=ch-(t/mx)*(ch-10);return `<line class="gl" x1="30" x2="${WB}" y1="${y}" y2="${y}"/><text x="24" y="${y+4}" text-anchor="end">${t}</text>`;}).join('')}${weeks.map((w,i)=>{const h=(w.n/mx)*(ch-10);return `<rect x="${36+i*bw+bw*.18}" y="${ch-h}" width="${bw*.64}" height="${h}" rx="4" fill="${i===7?'var(--accent)':'var(--fg-3)'}" opacity="${i===7?1:.45}"><title>${w.lab}: ${w.n} ครั้ง</title></rect><text x="${36+i*bw+bw/2}" y="${ch+18}" text-anchor="middle">${w.lab}</text>`;}).join('')}</svg>`;
   const life=ZONES.map(z=>{const ages=ROLLS.filter(r=>r.z===z).map(r=>ST.roll(r.id).age).filter(a=>a!=null);return {z,avg:ages.length?Math.round(ages.reduce((s,a)=>s+a,0)/ages.length):null};});
   const lm=Math.max(1,...life.map(l=>l.avg||0));
   return pageShell(['วิเคราะห์','Analytics'],'ภาพรวมสุขภาพของ table roll จากข้อมูลที่บันทึก',
-  `<div class="cols"><div class="card"><h2>Severity ต่อโซน <span class="sevname">ลูกทั้งหมดในโซน</span></h2>${dist}<div class="fl" style="margin-top:10px;font-size:12px;color:var(--fg2)">${[1,2,3,4,5].map(k=>`<span style="display:inline-flex;gap:5px;align-items:center"><span class="sev l${k}" style="--c:var(--l${k});min-width:18px;height:18px;font-size:10.5px">${k}</span>${LV[k]}</span>`).join('')}<span style="display:inline-flex;gap:5px;align-items:center"><span class="sev ni" style="min-width:18px;height:18px">–</span>ยังไม่ตรวจ</span></div></div>
-   <div class="card"><h2>อายุใช้งานเฉลี่ย <span class="sevname">วัน</span></h2><div style="display:flex;flex-direction:column;gap:10px">${life.map(l=>`<div style="display:grid;grid-template-columns:28px 1fr 64px;gap:10px;align-items:center"><b>${l.z.id}</b><div style="height:10px;border-radius:5px;background:var(--line);overflow:hidden"><div style="height:100%;width:${(l.avg||0)/lm*100}%;background:var(--fg2);border-radius:5px"></div></div><span class="mono" style="text-align:right">${l.avg??'—'}</span></div>`).join('')}</div></div></div>
+  `<div class="cols"><div class="card"><h2>Severity ต่อโซน <span class="sevname">ลูกทั้งหมดในโซน</span></h2>${dist}<div class="fl" style="margin-top:12px;font-size:12px;color:var(--fg2)">${[1,2,3,4,5].map(k=>`<span style="display:inline-flex;gap:4px;align-items:center"><span class="sev l${k}" style="--c:var(--l${k});min-width:18px;height:18px;font-size:10.5px">${k}</span>${LV[k]}</span>`).join('')}<span style="display:inline-flex;gap:4px;align-items:center"><span class="sev ni" style="min-width:18px;height:18px">–</span>ยังไม่ตรวจ</span></div></div>
+   <div class="card"><h2>อายุใช้งานเฉลี่ย <span class="sevname">วัน</span></h2><div style="display:flex;flex-direction:column;gap:12px">${life.map(l=>`<div style="display:grid;grid-template-columns:28px 1fr 64px;gap:12px;align-items:center"><b>${l.z.id}</b><div style="height:10px;border-radius:5px;background:var(--line);overflow:hidden"><div style="height:100%;width:${(l.avg||0)/lm*100}%;background:var(--fg2);border-radius:5px"></div></div><span class="mono" style="text-align:right">${l.avg??'—'}</span></div>`).join('')}</div></div></div>
   <div class="card"><h2>จำนวนการตรวจต่อสัปดาห์ <span class="sevname">8 สัปดาห์ล่าสุด</span></h2>${bars}</div>`);
 }
 
@@ -441,7 +441,7 @@ function pConfig(){
     <dl class="spec" style="grid-template-columns:auto 1fr"><dt>ที่เก็บข้อมูล</dt><dd style="font-family:var(--font)">เบราว์เซอร์เครื่องนี้ (ชั่วคราว)</dd><dt>Supabase</dt><dd style="font-family:var(--font)">ยังไม่เชื่อมต่อ</dd><dt>ข้อมูลตัวอย่าง</dt><dd style="font-family:var(--font)">${D.demo?'ใช้อยู่':'ไม่ได้ใช้'}</dd>
     <dt>บันทึกตรวจ</dt><dd>${D.inspections.length}</dd><dt>รายงานเสียหาย</dt><dd>${D.damages.length}</dd><dt>การเปลี่ยนลูก</dt><dd>${D.replacements.length}</dd><dt>แผนเปลี่ยน</dt><dd>${Object.keys(D.plans).length}</dd></dl>
     <p class="sevname" style="margin:12px 0 0">ตอนนี้ข้อมูลอยู่ในเบราว์เซอร์เครื่องนี้เท่านั้น เครื่องอื่นจะไม่เห็น เมื่อเชื่อม Supabase แล้วข้อมูลจะใช้ร่วมกันทุกเครื่อง</p></div>
-   <div class="card"><h2>จัดการข้อมูล</h2><div style="display:flex;flex-direction:column;gap:10px;align-items:flex-start">
+   <div class="card"><h2>จัดการข้อมูล</h2><div style="display:flex;flex-direction:column;gap:12px;align-items:flex-start">
     <button class="btn" id="cfgDemo">โหลดข้อมูลตัวอย่างใหม่</button>
     <div id="clrBox"><button class="btn danger" id="cfgClear">ล้างข้อมูลทั้งหมด</button></div>
     <button class="btn" id="cfgCopy">คัดลอกข้อมูลเป็น JSON (สำรอง)</button>
