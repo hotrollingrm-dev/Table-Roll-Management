@@ -57,7 +57,9 @@ function route(){
   if(p==='layout'){ensureScene(); SC.ready&&SC.resume();} else { SC.ready&&SC.pause(); renderPage(p);}
   try{localStorage.setItem('trm.page',p);}catch(e){}
 }
-function moveInd(a){const ind=$('#navind');if(!a)return;ind.style.width=a.offsetWidth+'px';ind.style.transform=`translateX(${a.offsetLeft}px)`;a.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'});}
+function navFade(){const n=$('#navlinks');n.classList.toggle('more-l',n.scrollLeft>4);n.classList.toggle('more-r',n.scrollLeft+n.clientWidth<n.scrollWidth-4);}
+$('#navlinks').addEventListener('scroll',navFade,{passive:true});addEventListener('resize',navFade);
+function moveInd(a){const ind=$('#navind');if(!a)return;setTimeout(navFade,400);ind.style.width=a.offsetWidth+'px';ind.style.transform=`translateX(${a.offsetLeft}px)`;a.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'});}
 addEventListener('hashchange',route);
 addEventListener('resize',()=>moveInd($('.navlinks a[aria-current]')));
 function go(p,after){ if(location.hash!=='#'+p) location.hash=p; else route(); if(after) setTimeout(after,ui.page==='layout'&&SC.ready?60:400);}
@@ -338,18 +340,35 @@ function pDashboard(){
   const plan=Object.keys(D.plans).length, openD=D.damages.filter(x=>x.status==='open').length;
   const urgent=ROLLS.filter(r=>{const l=ST.level(r.id);return l&&l<=2;}).sort((x,y)=>ST.level(x.id)-ST.level(y.id)||x.i-y.i);
   const recent=timeline().slice(0,8);
-  return pageShell(['สถานะไลน์ R-Mill','Line status · Dashboard'],`${ROLLS.length} ลูก · Critical ${a[1]} · High ${a[2]} · ยังไม่ตรวจ ${a[0]} ลูก`,
-  `<div class="kpis">
-    <button class="kpi ${a[1]?'alert':''}" data-kpi="1"><span>${tile('crit',44)}${bi('วิกฤต · L1','Critical')}</span><b style="color:var(--l1)">${a[1]}<small>ลูก</small></b><small>ต้องจัดการทันที · Act now</small></button>
-    <button class="kpi" data-kpi="2"><span>${tile('high',44)}${bi('สูง · L2','High')}</span><b style="color:var(--l2)">${a[2]}<small>ลูก</small></b><small>ควรวางแผนเปลี่ยน · Plan replacement</small></button>
-    <button class="kpi" data-kpi="0"><span>${tile('idle',44)}${bi('ยังไม่ตรวจ','Not inspected')}</span><b>${a[0]}<small>/ ${ROLLS.length}</small></b><small>ยังไม่มีบันทึกการตรวจ</small></button>
-    <button class="kpi" data-kpi="plan"><span>${tile('plan',44)}${bi('อยู่ในแผนเปลี่ยน','In replacement plan')}</span><b>${plan}<small>ลูก</small></b><small>ความเสียหายเปิดอยู่ ${openD} รายการ</small></button>
+  const stat=(k,th,en,n,unit,cls='')=>`<button class="kcell ${cls}" data-kpi="${k}"><span class="bi"><span class="th">${th}</span><span class="en">${en}</span></span><b>${n}<small>${unit}</small></b></button>`;
+  const chev='<svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>';
+  return pageShell(['สถานะไลน์ R-Mill','Line status · Dashboard'],'',
+  `<div class="kstrip glass" role="group" aria-label="สรุปสถานะ">
+    ${stat('1','วิกฤต · L1','Critical',a[1],'ลูก',a[1]?'alert':'')}
+    ${stat('2','สูง · L2','High',a[2],'ลูก','l2')}
+    ${stat('0','ยังไม่ตรวจ','Not inspected',a[0],'/ '+ROLLS.length)}
+    ${stat('plan','อยู่ในแผนเปลี่ยน','In replacement plan',plan,'ลูก')}
+    <div class="kcell note"><span class="bi"><span class="th">เสียหายค้างอยู่</span><span class="en">Open damage reports</span></span><b>${openD}<small>รายการ</small></b></div>
   </div>
-  <div class="cols">
-    <div class="card"><h2>ต้องจัดการก่อน <span class="sevname">${urgent.length} ลูก · L1–L2</span></h2>${urgent.length?`<div class="tblwrap"><table class="tbl"><thead><tr><th>ระดับ</th><th>ลูก</th><th>Zone</th><th>ความเสียหาย</th><th>แผน</th><th></th></tr></thead><tbody>${urgent.slice(0,10).map(r=>{const v=ST.roll(r.id);return `<tr><td>${sevBadge(v.level)}</td><td class="mono"><b>${esc(r.id)}</b></td><td>${r.z.id}</td><td>${v.openDmg[0]?esc(v.openDmg[0].type):'—'}</td><td>${v.plan?`<span class="status st-${v.plan.status}">${v.plan.status==='approved'?'อนุมัติ':'วางแผน'} ${fmtDate(v.plan.date)}</span>`:'<span class="sevname">ยังไม่มี</span>'}</td><td style="text-align:right"><button class="linkbtn" data-open="${esc(r.id)}">ดูใน 3D</button></td></tr>`;}).join('')}</tbody></table></div>${urgent.length>10?`<button class="linkbtn" data-kpi="12" style="margin-top:8px">ดูทั้งหมด ${urgent.length} ลูกในหน้า 3D</button>`:''}`:'<div class="emptyst"><b>ไม่มีลูกระดับ Critical หรือ High</b>ลูกที่ตรวจแล้วอยู่ในเกณฑ์ปกติ</div>'}</div>
-    <div class="card"><h2>สถานะแต่ละโซน</h2><div style="display:flex;flex-direction:column;gap:16px">${ZONES.map(z=>{const c=ST.counts(z.id);return `<button class="zc" data-zone="${z.id}" style="min-height:0"><div class="t"><span class="ztag">${z.id}</span><span class="nm">${esc(z.name)}<small>${z.count} ลูก</small></span></div>${sbar(c)}${lvrow(c)}</button>`;}).join('')}</div></div>
-  </div>
-  <div class="card"><h2>กิจกรรมล่าสุด</h2>${recent.length?`<div class="tl">${recent.map(tlItem).join('')}</div>`:'<div class="emptyst"><b>ยังไม่มีกิจกรรม</b>เริ่มจากบันทึกผลตรวจในหน้า 3D Layout</div>'}</div>`);
+  <div class="dgrid">
+    <section class="card">
+      <h2><span class="bi row"><span class="th">ต้องจัดการก่อน</span><span class="en">Needs action</span></span><span class="sevname">${urgent.length} ลูก · L1–L2</span></h2>
+      ${urgent.length?`<div class="ghead urow"><span>ระดับ</span><span>ลูก</span><span>โซน</span><span>ความเสียหาย</span><span>แผนเปลี่ยน</span><span></span></div>
+      <div class="grows">${urgent.slice(0,12).map(r=>{const v=ST.roll(r.id);return `<button class="grow urow" data-open="${esc(r.id)}" aria-label="เปิด ${esc(r.id)} ในผัง 3D">${sevBadge(v.level)}<span class="id">${esc(r.id)}</span><span class="cell">${r.z.id}</span><span class="cell">${v.openDmg[0]?esc(v.openDmg[0].type):'<span class="sevname">ไม่มีรายงาน</span>'}</span><span class="cell">${v.plan?`<span class="status st-${v.plan.status}">${v.plan.status==='approved'?'อนุมัติ':'วางแผน'} ${fmtDate(v.plan.date)}</span>`:'<span class="sevname">ยังไม่มีแผน</span>'}</span><span class="chev">${chev}</span></button>`;}).join('')}</div>
+      ${urgent.length>12?`<button class="btn tonal sm" data-kpi="12" style="margin-top:12px">ดูทั้ง ${urgent.length} ลูกในผัง 3D</button>`:''}`:'<div class="emptyst"><b>ไม่มีลูกระดับวิกฤตหรือสูง</b>ลูกที่ตรวจแล้วอยู่ในเกณฑ์ปกติ</div>'}
+    </section>
+    <aside class="rail">
+      <section class="card">
+        <h2><span class="bi row"><span class="th">สถานะแต่ละโซน</span><span class="en">Zones</span></span></h2>
+        <div class="zmini">${ZONES.map(z=>{const c=ST.counts(z.id);return `<button class="zrow" data-zone="${z.id}"><span class="ztag">${z.id}</span><span class="zm"><span class="zn">${esc(z.name)}</span>${sbar(c)}</span><span class="zc1">${c[1]?`<span class="sev l1" style="--c:var(--l1)">${c[1]}</span>`:'<span class="sevname">–</span>'}</span></button>`;}).join('')}</div>
+        <p class="sevname" style="margin:12px 0 0">ป้ายแดงคือจำนวนลูกวิกฤตในโซน</p>
+      </section>
+      <section class="card">
+        <h2><span class="bi row"><span class="th">กิจกรรมล่าสุด</span><span class="en">Activity</span></span></h2>
+        ${recent.length?`<div class="tl">${recent.map(e=>tlItem(e,true)).join('')}</div>`:'<div class="emptyst"><b>ยังไม่มีกิจกรรม</b>เริ่มจากบันทึกผลตรวจในผัง 3D</div>'}
+      </section>
+    </aside>
+  </div>`);
 }
 pDashboard.wire=el=>{
   $$('[data-kpi]',el).forEach(b=>b.onclick=()=>{const k=b.dataset.kpi;ui.f.levels.clear();ui.f.ni=ui.f.dmg=ui.f.plan=false;
@@ -365,7 +384,10 @@ function timeline(){
   D.replacements.forEach(x=>ev.push({date:x.date,kind:'rep',pos:x.pos,t:'เปลี่ยนลูก',s:(x.oldPhys||'?')+' → '+x.newPhys}));
   return ev.sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0);
 }
-const tlItem=e=>`<div class="tli"><span class="d">${fmtDate(e.date)}</span>${tile(e.kind,40)}<div class="x"><b class="mono">${esc(e.pos)}</b> ${esc(e.t)} ${e.level?sevBadge(e.level):''}<small>${esc(e.s||'')}</small></div></div>`;
+const KIND={insp:'ตรวจ',dmg:'เสียหาย',rep:'เปลี่ยนลูก'};
+const tlItem=(e,compact)=>compact
+  ?`<div class="tli noic"><span class="d">${fmtDate(e.date)}</span><div class="x"><span class="tline">${e.level?sevBadge(e.level):''}<b class="mono">${esc(e.pos)}</b><span class="k">${esc(e.t||KIND[e.kind]||'')}</span></span>${e.s?`<small>${esc(e.s)}</small>`:''}</div></div>`
+  :`<div class="tli"><span class="d">${fmtDate(e.date)}</span>${tile(e.kind,40)}<div class="x"><span class="tline"><b class="mono">${esc(e.pos)}</b><span class="k">${esc(e.t)}</span>${e.level?sevBadge(e.level):''}</span>${e.s?`<small>${esc(e.s)}</small>`:''}</div></div>`;
 
 function pInspection(){
   const due=ROLLS.filter(r=>{const v=ST.roll(r.id);if(!v.lastInsp)return true;return (Date.now()-new Date(v.lastInsp.date))/86400000>30;});
@@ -376,8 +398,8 @@ function pInspection(){
   return pageShell(['ตรวจสอบลูกกลิ้ง','Inspection'],'คิวลูกที่ต้องตรวจ: ยังไม่เคยตรวจ หรือตรวจครั้งล่าสุดเกิน 30 วัน',
   `<div class="cols"><div class="card"><h2>คิวตรวจ <span class="sevname">${due.length} ลูก · ยังไม่เคยตรวจ ${never}</span></h2>
    <div class="fl" style="margin-bottom:12px"><button class="fbtn" data-iz="all" aria-pressed="${zf==='all'}">ทุกโซน</button>${ZONES.map(z=>`<button class="fbtn" data-iz="${z.id}" aria-pressed="${zf===z.id}">${z.id}</button>`).join('')}</div>
-   ${rows.length?`<div class="tblwrap" style="max-height:520px;overflow:auto"><table class="tbl"><thead><tr><th>ลูก</th><th>Zone</th><th>ตรวจล่าสุด</th><th>ระดับ</th><th></th></tr></thead><tbody>${rows.slice(0,60).map(r=>{const v=ST.roll(r.id);return `<tr><td class="mono"><b>${esc(r.id)}</b></td><td>${r.z.id}</td><td>${v.lastInsp?fmtDate(v.lastInsp.date):'<span class="sevname">ยังไม่เคย</span>'}</td><td>${sevBadge(v.level)}</td><td style="text-align:right"><button class="btn sm pri" data-open="${esc(r.id)}" data-action="insp">บันทึกผลตรวจ</button></td></tr>`;}).join('')}</tbody></table></div>${rows.length>60?`<p class="sevname">แสดง 60 จาก ${rows.length} ลูก · เลือกโซนเพื่อดูส่วนที่เหลือ</p>`:''}`:'<div class="emptyst"><b>ไม่มีลูกค้างตรวจ</b>ทุกลูกในโซนนี้ตรวจภายใน 30 วันแล้ว</div>'}</div>
-   <div class="card"><h2>บันทึกล่าสุด</h2>${recent.length?`<div class="tl">${recent.map(x=>tlItem({date:x.date,kind:'insp',pos:x.pos,level:x.level,t:'',s:(x.by||'')+(x.note?' · '+x.note:'')})).join('')}</div>`:'<div class="emptyst"><b>ยังไม่มีบันทึกการตรวจ</b></div>'}</div></div>`);
+   ${rows.length?`<div class="tblwrap" style="max-height:520px;overflow:auto"><table class="tbl"><thead><tr><th>ลูก</th><th>โซน</th><th>ตรวจล่าสุด</th><th>ระดับ</th><th></th></tr></thead><tbody>${rows.slice(0,60).map(r=>{const v=ST.roll(r.id);return `<tr><td class="mono"><b>${esc(r.id)}</b></td><td>${r.z.id}</td><td>${v.lastInsp?fmtDate(v.lastInsp.date):'<span class="sevname">ยังไม่เคย</span>'}</td><td>${sevBadge(v.level)}</td><td style="text-align:right"><button class="btn sm tonal" data-open="${esc(r.id)}" data-action="insp">บันทึกผลตรวจ</button></td></tr>`;}).join('')}</tbody></table></div>${rows.length>60?`<p class="sevname">แสดง 60 จาก ${rows.length} ลูก · เลือกโซนเพื่อดูส่วนที่เหลือ</p>`:''}`:'<div class="emptyst"><b>ไม่มีลูกค้างตรวจ</b>ทุกลูกในโซนนี้ตรวจภายใน 30 วันแล้ว</div>'}</div>
+   <div class="card"><h2>บันทึกล่าสุด</h2>${recent.length?`<div class="tl">${recent.map(x=>tlItem({date:x.date,kind:'insp',pos:x.pos,level:x.level,t:'บันทึกผลตรวจ',s:[x.by,x.note].filter(Boolean).join(' · ')},true)).join('')}</div>`:'<div class="emptyst"><b>ยังไม่มีบันทึกการตรวจ</b></div>'}</div></div>`);
 }
 pInspection.wire=el=>$$('[data-iz]',el).forEach(b=>b.onclick=()=>{pInspection.zone=b.dataset.iz;renderPage('inspection');});
 
@@ -387,7 +409,7 @@ function pDamage(){
   return pageShell(['รายงานความเสียหาย','Damage Report'],'รายงานความเสียหายของลูกกลิ้ง เปิด/ปิดสถานะได้จากที่นี่ แจ้งใหม่จากหน้ารายละเอียดลูกใน 3D Layout',
   `<div class="card"><h2><span class="fl"><button class="fbtn" data-ds="open" aria-pressed="${st==='open'}">เปิดอยู่</button><button class="fbtn" data-ds="closed" aria-pressed="${st==='closed'}">ปิดแล้ว</button><button class="fbtn" data-ds="all" aria-pressed="${st==='all'}">ทั้งหมด</button></span>
    <form class="toolbar" id="newDmg"><label for="ndq" style="position:absolute;left:-9999px">เลขลูก</label><input id="ndq" class="inpnum" style="width:120px;text-align:left" placeholder="เลขลูก"><button class="btn sm pri">แจ้งเสียหายใหม่</button></form></h2>
-   ${list.length?`<div class="tblwrap"><table class="tbl"><thead><tr><th>ระดับ</th><th>ลูก</th><th>Zone</th><th>ประเภท</th><th>วันที่พบ</th><th>รายละเอียด</th><th>สถานะ</th><th></th></tr></thead><tbody>${list.map(x=>{const r=rollById(x.pos);return `<tr><td>${sevBadge(x.level)}</td><td class="mono"><b>${esc(x.pos)}</b></td><td>${r?r.z.id:'—'}</td><td>${esc(x.type)}</td><td class="mono">${fmtDate(x.date)}</td><td>${esc(x.note||'—')}</td><td><span class="status ${x.status==='open'?'st-open':'st-closed'}">${x.status==='open'?'เปิดอยู่':'ปิดแล้ว'}</span></td><td style="text-align:right;white-space:nowrap"><button class="linkbtn" data-tog="${x.id}">${x.status==='open'?'ปิดงาน':'เปิดใหม่'}</button><button class="linkbtn" data-open="${esc(x.pos)}">ดูใน 3D</button></td></tr>`;}).join('')}</tbody></table></div>`:`<div class="emptyst"><b>ไม่มีรายงาน${st==='open'?'ที่เปิดอยู่':''}</b>แจ้งความเสียหายได้จากปุ่มด้านบน หรือจากหน้ารายละเอียดลูก</div>`}</div>`);
+   ${list.length?`<div class="tblwrap"><table class="tbl"><thead><tr><th>ระดับ</th><th>ลูก</th><th>Zone</th><th>ประเภท</th><th>วันที่พบ</th><th>รายละเอียด</th><th>สถานะ</th><th></th></tr></thead><tbody>${list.map(x=>{const r=rollById(x.pos);return `<tr><td>${sevBadge(x.level)}</td><td class="mono"><b>${esc(x.pos)}</b></td><td>${r?r.z.id:'—'}</td><td>${esc(x.type)}</td><td class="mono">${fmtDate(x.date)}</td><td class="wrapcell">${esc(x.note||'—')}</td><td><span class="status ${x.status==='open'?'st-open':'st-closed'}">${x.status==='open'?'เปิดอยู่':'ปิดแล้ว'}</span></td><td style="text-align:right;white-space:nowrap"><button class="linkbtn" data-tog="${x.id}">${x.status==='open'?'ปิดงาน':'เปิดใหม่'}</button><button class="linkbtn" data-open="${esc(x.pos)}">ดูใน 3D</button></td></tr>`;}).join('')}</tbody></table></div>`:`<div class="emptyst"><b>ไม่มีรายงาน${st==='open'?'ที่เปิดอยู่':''}</b>แจ้งความเสียหายได้จากปุ่มด้านบน หรือจากหน้ารายละเอียดลูก</div>`}</div>`);
 }
 pDamage.wire=el=>{$$('[data-ds]',el).forEach(b=>b.onclick=()=>{pDamage.st=b.dataset.ds;renderPage('damage');});
   $$('[data-tog]',el).forEach(b=>b.onclick=()=>{const x=ST.data.damages.find(d=>d.id===b.dataset.tog);ST.setDamageStatus(x.id,x.status==='open'?'closed':'open');toast('อัปเดตสถานะ '+x.pos+' แล้ว');});
@@ -430,7 +452,7 @@ function pAnalytics(){
 
 function pInventory(){
   return pageShell(['คลังลูกกลิ้งสำรอง','Inventory'],'ลูกกลิ้งสำรองแยกตามแบบของแต่ละโซน แก้ตัวเลขในคลังและจุดสั่งซื้อได้โดยตรง',
-  `<div class="card"><div class="tblwrap"><table class="tbl"><thead><tr><th>Zone</th><th>แบบลูก</th><th>Ø ปลาย/กลาง</th><th class="num">ติดตั้ง</th><th class="num">ในคลัง</th><th class="num">ขั้นต่ำ</th><th class="num">ในแผนเปลี่ยน</th><th>สถานะ</th></tr></thead><tbody>${ZONES.map(z=>{const iv=ST.data.inventory[z.id]||{stock:0,min:0};const planned=ROLLS.filter(r=>r.z===z&&ST.roll(r.id).plan).length;const low=iv.stock<iv.min||iv.stock<planned;return `<tr><td><span class="ztag" style="width:30px;height:30px;font-size:14px">${z.id}</span></td><td>${esc(z.type)}<br><span class="sevname">${esc(z.dwg)}</span></td><td class="mono">${Math.round(z.dEnd*1000)} / ${Math.round(z.dMid*1000)}</td><td class="num">${z.count}</td><td class="num"><label for="inv-s-${z.id}" style="position:absolute;left:-9999px">ในคลัง Zone ${z.id}</label><input class="inpnum" id="inv-s-${z.id}" type="number" min="0" value="${iv.stock}" data-inv="${z.id}" data-k="stock"></td><td class="num"><label for="inv-m-${z.id}" style="position:absolute;left:-9999px">ขั้นต่ำ Zone ${z.id}</label><input class="inpnum" id="inv-m-${z.id}" type="number" min="0" value="${iv.min}" data-inv="${z.id}" data-k="min"></td><td class="num">${planned}</td><td><span class="status ${low?'st-low':'st-ok'}">${low?'ต่ำกว่าที่ต้องใช้':'พอ'}</span></td></tr>`;}).join('')}</tbody></table></div></div>`);
+  `<div class="card"><div class="tblwrap"><table class="tbl"><thead><tr><th>Zone</th><th>แบบลูก</th><th>Ø ปลาย/กลาง</th><th class="num">ติดตั้ง</th><th class="num">ในคลัง</th><th class="num">ขั้นต่ำ</th><th class="num">ในแผนเปลี่ยน</th><th>สถานะ</th></tr></thead><tbody>${ZONES.map(z=>{const iv=ST.data.inventory[z.id]||{stock:0,min:0};const planned=ROLLS.filter(r=>r.z===z&&ST.roll(r.id).plan).length;const low=iv.stock<iv.min||iv.stock<planned;return `<tr><td><span class="ztag" style="width:30px;height:30px;font-size:14px">${z.id}</span></td><td class="wrapcell">${esc(z.type)}<br><span class="sevname">${esc(z.dwg)}</span></td><td class="mono">${Math.round(z.dEnd*1000)} / ${Math.round(z.dMid*1000)}</td><td class="num">${z.count}</td><td class="num"><label for="inv-s-${z.id}" style="position:absolute;left:-9999px">ในคลัง Zone ${z.id}</label><input class="inpnum" id="inv-s-${z.id}" type="number" min="0" value="${iv.stock}" data-inv="${z.id}" data-k="stock"></td><td class="num"><label for="inv-m-${z.id}" style="position:absolute;left:-9999px">ขั้นต่ำ Zone ${z.id}</label><input class="inpnum" id="inv-m-${z.id}" type="number" min="0" value="${iv.min}" data-inv="${z.id}" data-k="min"></td><td class="num">${planned}</td><td><span class="status ${low?'st-low':'st-ok'}">${low?'ต่ำกว่าที่ต้องใช้':'พอ'}</span></td></tr>`;}).join('')}</tbody></table></div></div>`);
 }
 pInventory.wire=el=>$$('[data-inv]',el).forEach(i=>i.onchange=()=>{ST.setInventory(i.dataset.inv,{[i.dataset.k]:Math.max(0,+i.value||0)});toast('บันทึกจำนวนในคลัง Zone '+i.dataset.inv+' แล้ว');});
 
