@@ -524,6 +524,25 @@ button,.btn,.fbtn,.status,.tagp,.sev,.lbl,.seg button,.tabs button,.navlinks a,.
 .lvnone b{color:var(--fg)}
 .nw{white-space:nowrap}
 .lbl.call{opacity:.75}
+/* ---------- shift operator ---------- */
+.opchip{display:flex;align-items:center;gap:8px;height:48px;padding:0 14px 0 8px;border:0;border-radius:999px;background:var(--surface-2);white-space:nowrap;flex:none;transition:background .2s}
+.opchip:hover{background:var(--glass-strong)}
+.opchip .th{font-size:14px;font-weight:600}
+.opchip .en{font-size:12px}
+.opchip.none{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--abn) 45%,transparent)}
+.oppop{position:absolute;right:8px;top:calc(100% + 8px);width:min(360px,calc(100vw - 32px));border-radius:var(--r-l);padding:16px;z-index:30}
+.opform{display:flex;flex-direction:column;gap:10px}
+.opform .th{font-weight:600}
+.byin{display:flex;align-items:center;gap:12px}
+.byin input{height:56px;width:150px;border-radius:var(--r-s);border:2px solid var(--line);background:var(--surface);padding:0 14px;font-family:var(--mono);font-size:20px;font-weight:600;outline:none}
+.byin input:focus{border-color:var(--primary)}
+.byname{font-size:18px;font-weight:700;white-space:nowrap}
+.byline{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:15px;padding:8px 12px;border-radius:var(--r-s);background:var(--surface-2)}
+.team{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.team h3{margin:0;font-size:15px;font-weight:600}
+.srow{grid-template-columns:96px minmax(0,1fr) minmax(0,1.3fr) auto;min-height:56px}
+@media (max-width:1180px){.opchip .en{display:none}.opchip{padding:0 12px 0 6px}}
+@media (max-width:760px){.opchip .bi{display:none}.opchip{padding:0 10px}}
 /* toast & loading */
 .toast{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:50;background:var(--toast-bg);color:var(--toast-fg);padding:12px 20px 12px 12px;border-radius:var(--r-l);display:flex;gap:12px;align-items:center;box-shadow:var(--shadow-up);backdrop-filter:blur(16px);transform:translateX(calc(100% + 40px));transition:transform .4s var(--ease);pointer-events:none;max-width:calc(100% - 32px)}
 .toast.on{transform:none}
@@ -573,6 +592,8 @@ button,.btn,.fbtn,.status,.tagp,.sev,.lbl,.seg button,.tabs button,.navlinks a,.
     <span class="ind" id="navind"></span>
   </nav>
   <span class="demo-badge" id="demoBadge" hidden>ข้อมูลตัวอย่าง</span>
+  <button class="opchip" id="opChip" type="button" aria-haspopup="dialog"></button>
+  <div class="oppop glass" id="opPop" role="dialog" aria-label="ผู้บันทึกกะนี้" hidden></div>
 </header>
 
 <main class="pages">
@@ -639,5 +660,6 @@ button,.btn,.fbtn,.status,.tagp,.sev,.lbl,.seg button,.tabs button,.navlinks a,.
 <script src="js/layout-data.js"></script>
 <script src="js/reference-data.js"></script>
 <script src="js/store.js"></script>
+<script src="js/staff.js"></script>
 <script src="js/scene.js"></script>
 <script src="js/app.js"></script>

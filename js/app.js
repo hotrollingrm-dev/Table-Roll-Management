@@ -13,6 +13,7 @@ const TH_M=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ
 const fmtMonth=m=>{if(!m)return '—';const [y,mm]=m.split('-');return TH_M[+mm-1]+' '+(+y+543);};
 const fmtPlan=p=>p?(p.src==='plan2570'&&p.month?fmtMonth(p.month):fmtDate(p.date)):'—';
 const code=id=>ST.codeOf(id);
+const SF=window.TRM_STAFF; const who=c=>SF.label(c);
 const fmtDate=d=>{if(!d)return '—';if(String(d).length===4)return 'Crack '+d;const t=new Date(d);return t.toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'numeric'});};
 const bi=(th,en,cls='')=>`<span class="bi ${cls}"><span class="th">${th}</span>${en&&en!==th?`<span class="en">${en}</span>`:''}</span>`;
 /* 3D tile icons (house style §8) */
@@ -287,7 +288,7 @@ function renderDetail(){
    </div>
    <div>
      <div class="sect"><h3><span>ประวัติระดับ<span class="en">Severity history</span></span> <span class="mono" style="text-transform:none;letter-spacing:0">${v.insp.length} ครั้ง</span></h3>${histLv.length?`<div class="hist" role="img" aria-label="ประวัติ severity">${histLv.map(x=>`<i style="--c:var(--l${x.level});height:${(6-x.level)*16+12}%" title="${fmtDate(x.date)} · L${x.level}"></i>`).join('')}</div>`:'<div class="none">ยังไม่มีบันทึกการตรวจ</div>'}</div>
-     <div class="sect"><h3><span>บันทึกการตรวจ<span class="en">Inspection records</span></span></h3>${recList(v.insp,x=>`<div class="rec"><span class="d">${fmtDate(x.date)}</span><span class="t">${x.by?esc(x.by):'—'}${x.note?` <small>· ${esc(x.note)}</small>`:''}</span>${sevBadge(x.level)}</div>`,'ยังไม่มีบันทึกการตรวจ · กด “บันทึกผลตรวจ” เพื่อเริ่ม')}</div>
+     <div class="sect"><h3><span>บันทึกการตรวจ<span class="en">Inspection records</span></span></h3>${recList(v.insp,x=>`<div class="rec"><span class="d">${fmtDate(x.date)}</span><span class="t">${x.by?esc(who(x.by)):'<span class="sevname">ไม่ระบุผู้ตรวจ</span>'}${x.note?` <small>· ${esc(x.note)}</small>`:''}</span>${sevBadge(x.level)}</div>`,'ยังไม่มีบันทึกการตรวจ · กด “บันทึกผลตรวจ” เพื่อเริ่ม')}</div>
      <div class="sect"><h3><span>ความเสียหาย<span class="en">Damage records</span></span></h3>${recList(v.dmg,x=>`<div class="rec"><span class="d">${fmtDate(x.date)}</span><span class="t">${esc(x.type)}${x.note?` <small>· ${esc(x.note)}</small>`:''}</span><span class="status ${x.status==='open'?'st-open':'st-closed'}">${x.status==='open'?'เปิดอยู่':'ปิดแล้ว'}</span></div>`,'ไม่มีรายงานความเสียหาย')}</div>
      <div class="sect"><h3><span>ประวัติการเปลี่ยน<span class="en">Replacement history</span></span></h3>${recList(v.rep,x=>`<div class="rec"><span class="d">${fmtDate(x.date)}</span><span class="t mono" style="font-size:12.5px">${esc(x.oldPhys||'?')} → ${esc(x.newPhys)}</span><span class="d">${esc(x.reason||'')}</span></div>`,'ยังไม่เคยเปลี่ยนลูกในระบบ')}</div>
      <details class="more"><summary>สเปกตามแบบ GA · ${esc(z.dwg)}</summary><dl class="spec">
@@ -305,24 +306,36 @@ function renderDetail(){
 /* forms */
 function lvPicker(sel){return `<div class="lvpick" role="radiogroup" aria-label="ระดับตามเกณฑ์ ${CRIT.doc}">${[1,2,3,4,5].map(k=>{const c=CRIT.levels[k];return `<button type="button" role="radio" data-l="${k}" aria-pressed="${sel===k}" aria-checked="${sel===k}" style="--c:var(--l${k})"><span class="lh"><b>${k}</b><em>${c.verdict}</em></span><span class="ln">${esc(c.name)}</span><small>${esc(c.short)}</small></button>`;}).join('')}</div><div class="lvguide" id="lvguide"><span class="sevname">เลือกระดับตามสภาพผิวที่เห็น · เกณฑ์ ${CRIT.doc} Rev.${CRIT.rev}</span></div>`;}
 function lvGuide(k){const c=CRIT.levels[k];return `<div class="guide v${k}" style="--c:var(--l${k})"><div class="gh"><span class="vv">${c.verdict}</span><b>${esc(c.verdictTh)}</b><span class="sevname">${esc(c.deadline)}</span></div><div class="gcols"><div><h5>เกณฑ์ตรวจ</h5><ul>${c.criteria.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div><div><h5>การดำเนินการ</h5><ol>${c.actions.map(x=>`<li>${esc(x)}</li>`).join('')}</ol></div></div></div>`;}
+/* recorder: the operator set for this shift, or an employee-code field when nobody is set */
+function byField(){
+  const c=SF.operator;
+  if(c) return `<div class="byline">ผู้บันทึก <b>${esc(who(c))}</b> <span class="mono sevname">${esc(c)}</span><button type="button" class="linkbtn" data-opchange>เปลี่ยน</button></div>`;
+  return `<div class="field"><label for="fby">รหัสพนักงานผู้บันทึก</label><div class="byin"><input id="fby" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="รหัส 6 หลัก"><span class="byname" id="fbyName"></span></div><span class="err" id="fbyErr" hidden>${SF.people.length?'ไม่พบรหัสนี้ในรายชื่อพนักงาน':'ใส่รหัสพนักงาน 4–8 หลัก'}</span>${SF.people.length?'':'<span class="sevname" style="white-space:normal">ยังไม่มีรายชื่อพนักงานในเครื่องนี้ เพิ่มได้ที่หน้าตั้งค่า</span>'}</div>`;
+}
+function wireBy(box){
+  const i=$('#fby',box); if(i) i.oninput=()=>{const n=SF.displayName(i.value.trim());$('#fbyName',box).textContent=n||'';$('#fbyErr',box).hidden=true;};
+  const c=$('[data-opchange]',box); if(c) c.onclick=()=>{SF.setOperator(null);renderActionForm();};
+}
 function renderActionForm(){
   const box=$('#actForm'); if(!box) return; const r=ui.sel, v=ST.roll(r.id), a=ui.action;
   if(!a){box.innerHTML='';return;}
   const head=(t)=>`<h4><span>${t} · <span class="mono">${esc(r.id)}</span></span><button type="button" class="iconbtn" data-cancel aria-label="ปิดฟอร์ม" style="width:36px;height:36px">${ic('x')}</button></h4>`;
   const today=ST.today();
-  if(a==='insp') box.innerHTML=`<form class="form" id="f">${head('บันทึกผลตรวจรอยแตกผิว')}<div class="field"><label>ระดับตามสภาพผิว</label>${lvPicker(null)}</div><div class="frow"><div class="field"><label for="fd">วันที่ตรวจ</label><input id="fd" type="date" value="${today}" max="${today}"></div><div class="field"><label for="fb">ผู้ตรวจ</label><input id="fb" placeholder="ชื่อผู้ตรวจ"></div></div><div class="field"><label for="fn">หมายเหตุ</label><textarea id="fn" placeholder="ตำแหน่งรอยจากปลาย roll, ด้าน DS/WS, จำนวนเส้น"></textarea></div><span class="err" id="fe" hidden>เลือกระดับ severity ก่อนบันทึก</span><div class="fbtns"><button type="button" class="btn" data-cancel>ยกเลิก</button><button class="btn pri">บันทึกผลตรวจ</button></div></form>`;
-  if(a==='dmg') box.innerHTML=`<form class="form" id="f">${head('แจ้งความเสียหาย')}<div class="field"><label for="ft">ประเภทความเสียหาย</label><select id="ft">${['รอยแตกเป็นร่างแห (Crack network)','ผิวหลุดลอก / เป็นหลุม (Spalling)','รอยแตกแนวขวางเป็นตาราง','รอยเส้นรอบวง','ทำให้เกิดรอยบนผิวงาน','Bearing noise','Bent shaft','Motor / gearbox','อื่นๆ'].map(t=>`<option>${t}</option>`).join('')}</select></div><div class="field"><label>ระดับความรุนแรง</label>${lvPicker(null)}</div><div class="frow"><div class="field"><label for="fd">วันที่พบ</label><input id="fd" type="date" value="${today}" max="${today}"></div><div class="field"><label for="fn">รายละเอียด</label><input id="fn" placeholder="ตำแหน่ง / ขนาดความเสียหาย"></div></div><span class="err" id="fe" hidden>เลือกระดับความรุนแรงก่อนส่ง</span><div class="fbtns"><button type="button" class="btn" data-cancel>ยกเลิก</button><button class="btn pri">ส่งรายงาน</button></div></form>`;
-  if(a==='rep') box.innerHTML=`<form class="form" id="f">${head('เปลี่ยนลูกกลิ้ง')}<div class="frow"><div class="field"><label>Physical ID เดิม</label><input value="${esc(v.phys||'ยังไม่ระบุ')}" disabled></div><div class="field"><label for="fp">Physical ID ใหม่</label><input id="fp" placeholder="เช่น TR-${r.z.id}-2045" required></div></div><div class="frow"><div class="field"><label for="fd">วันที่เปลี่ยน</label><input id="fd" type="date" value="${today}" max="${today}"></div><div class="field"><label for="fr">เหตุผล</label><select id="fr"><option>ตามแผน</option><option>เสียหาย</option><option>สึกเกินพิกัด</option><option>อื่นๆ</option></select></div></div><div class="note" style="font-size:12.5px;color:var(--fg2)">หลังเปลี่ยน ระบบจะนับอายุใหม่จากวันที่เปลี่ยน ปิดรายงานความเสียหายที่ค้างอยู่ และเอาลูกนี้ออกจากแผน Severity จะกลับเป็น “ยังไม่ตรวจ” จนกว่าจะบันทึกผลตรวจครั้งแรก</div><span class="err" id="fe" hidden>ใส่ Physical ID ของลูกใหม่</span><div class="fbtns"><button type="button" class="btn" data-cancel>ยกเลิก</button><button class="btn pri">ยืนยันการเปลี่ยน</button></div></form>`;
-  if(a==='plan') box.innerHTML=`<form class="form" id="f">${head(v.plan?'แก้ไขแผนเปลี่ยน':'เพิ่มเข้าแผนเปลี่ยน')}<div class="frow"><div class="field"><label for="fd">กำหนดเปลี่ยน</label><input id="fd" type="date" value="${v.plan?v.plan.date:today}" min="${today}"></div><div class="field"><label for="fs">สถานะ</label><select id="fs"><option value="planned" ${v.plan&&v.plan.status==='planned'?'selected':''}>วางแผนแล้ว</option><option value="approved" ${v.plan&&v.plan.status==='approved'?'selected':''}>อนุมัติแล้ว</option></select></div></div><div class="frow"><div class="field"><label for="fpr">ความสำคัญ</label><select id="fpr">${['สูง','ปกติ','ต่ำ'].map(p=>`<option ${v.plan&&v.plan.priority===p?'selected':''}>${p}</option>`).join('')}</select></div><div class="field"><label for="fn">หมายเหตุ</label><input id="fn" value="${esc(v.plan?v.plan.note:'')}" placeholder="เช่น รอ shutdown สัปดาห์หน้า"></div></div><div class="fbtns">${v.plan?'<button type="button" class="btn danger" data-unplan>เอาออกจากแผน</button><span style="flex:1"></span>':''}<button type="button" class="btn" data-cancel>ยกเลิก</button><button class="btn pri">${v.plan?'บันทึกแผน':'เพิ่มเข้าแผน'}</button></div></form>`;
+  if(a==='insp') box.innerHTML=`<form class="form" id="f">${head('บันทึกผลตรวจรอยแตกผิว')}<div class="field"><label>ระดับตามสภาพผิว</label>${lvPicker(null)}</div><div class="frow"><div class="field"><label for="fd">วันที่ตรวจ</label><input id="fd" type="date" value="${today}" max="${today}"></div>${byField()}</div><div class="field"><label for="fn">หมายเหตุ</label><textarea id="fn" placeholder="ตำแหน่งรอยจากปลาย roll, ด้าน DS/WS, จำนวนเส้น"></textarea></div><span class="err" id="fe" hidden>เลือกระดับ severity ก่อนบันทึก</span><div class="fbtns"><button type="button" class="btn" data-cancel>ยกเลิก</button><button class="btn pri">บันทึกผลตรวจ</button></div></form>`;
+  if(a==='dmg') box.innerHTML=`<form class="form" id="f">${head('แจ้งความเสียหาย')}<div class="field"><label for="ft">ประเภทความเสียหาย</label><select id="ft">${['รอยแตกเป็นร่างแห (Crack network)','ผิวหลุดลอก / เป็นหลุม (Spalling)','รอยแตกแนวขวางเป็นตาราง','รอยเส้นรอบวง','ทำให้เกิดรอยบนผิวงาน','Bearing noise','Bent shaft','Motor / gearbox','อื่นๆ'].map(t=>`<option>${t}</option>`).join('')}</select></div><div class="field"><label>ระดับความรุนแรง</label>${lvPicker(null)}</div><div class="frow"><div class="field"><label for="fd">วันที่พบ</label><input id="fd" type="date" value="${today}" max="${today}"></div><div class="field"><label for="fn">รายละเอียด</label><input id="fn" placeholder="ตำแหน่ง / ขนาดความเสียหาย"></div></div>${byField(true)}<span class="err" id="fe" hidden>เลือกระดับความรุนแรงก่อนส่ง</span><div class="fbtns"><button type="button" class="btn" data-cancel>ยกเลิก</button><button class="btn pri">ส่งรายงาน</button></div></form>`;
+  if(a==='rep') box.innerHTML=`<form class="form" id="f">${head('เปลี่ยนลูกกลิ้ง')}<div class="frow"><div class="field"><label>Physical ID เดิม</label><input value="${esc(v.phys||'ยังไม่ระบุ')}" disabled></div><div class="field"><label for="fp">Physical ID ใหม่</label><input id="fp" placeholder="เช่น TR-${r.z.id}-2045" required></div></div><div class="frow"><div class="field"><label for="fd">วันที่เปลี่ยน</label><input id="fd" type="date" value="${today}" max="${today}"></div><div class="field"><label for="fr">เหตุผล</label><select id="fr"><option>ตามแผน</option><option>เสียหาย</option><option>สึกเกินพิกัด</option><option>อื่นๆ</option></select></div></div><div class="note" style="font-size:12.5px;color:var(--fg2)">หลังเปลี่ยน ระบบจะนับอายุใหม่จากวันที่เปลี่ยน ปิดรายงานความเสียหายที่ค้างอยู่ และเอาลูกนี้ออกจากแผน Severity จะกลับเป็น “ยังไม่ตรวจ” จนกว่าจะบันทึกผลตรวจครั้งแรก</div>${byField(true)}<span class="err" id="fe" hidden>ใส่ Physical ID ของลูกใหม่</span><div class="fbtns"><button type="button" class="btn" data-cancel>ยกเลิก</button><button class="btn pri">ยืนยันการเปลี่ยน</button></div></form>`;
+  if(a==='plan') box.innerHTML=`<form class="form" id="f">${head(v.plan?'แก้ไขแผนเปลี่ยน':'เพิ่มเข้าแผนเปลี่ยน')}<div class="frow"><div class="field"><label for="fd">กำหนดเปลี่ยน</label><input id="fd" type="date" value="${v.plan?v.plan.date:today}" min="${today}"></div><div class="field"><label for="fs">สถานะ</label><select id="fs"><option value="planned" ${v.plan&&v.plan.status==='planned'?'selected':''}>วางแผนแล้ว</option><option value="approved" ${v.plan&&v.plan.status==='approved'?'selected':''}>อนุมัติแล้ว</option></select></div></div><div class="frow"><div class="field"><label for="fpr">ความสำคัญ</label><select id="fpr">${['สูง','ปกติ','ต่ำ'].map(p=>`<option ${v.plan&&v.plan.priority===p?'selected':''}>${p}</option>`).join('')}</select></div><div class="field"><label for="fn">หมายเหตุ</label><input id="fn" value="${esc(v.plan?v.plan.note:'')}" placeholder="เช่น รอ shutdown สัปดาห์หน้า"></div></div>${byField(true)}<div class="fbtns">${v.plan?'<button type="button" class="btn danger" data-unplan>เอาออกจากแผน</button><span style="flex:1"></span>':''}<button type="button" class="btn" data-cancel>ยกเลิก</button><button class="btn pri">${v.plan?'บันทึกแผน':'เพิ่มเข้าแผน'}</button></div></form>`;
   let lvl=null;
+  wireBy(box);
   $$('.lvpick button',box).forEach(b=>b.onclick=()=>{lvl=+b.dataset.l;const g=$('#lvguide',box);if(g)g.innerHTML=lvGuide(lvl);$$('.lvpick button',box).forEach(x=>{x.setAttribute('aria-pressed',x===b);x.setAttribute('aria-checked',x===b);});$('#fe')&&($('#fe').hidden=true);});
   $$('[data-cancel]',box).forEach(b=>b.onclick=()=>{ui.action=null;renderDetail();});
   const un=$('[data-unplan]',box); if(un) un.onclick=()=>{ST.setPlan(r.id,null);ui.action=null;toast('เอา '+r.id+' ออกจากแผนแล้ว');};
   $('#f').onsubmit=e=>{e.preventDefault();const val=id=>{const x=$('#'+id,box);return x?x.value.trim():'';};
-    if(a==='insp'){if(!lvl){$('#fe').hidden=false;return;}ST.addInspection(r.id,{date:val('fd'),level:lvl,by:val('fb'),note:val('fn')});ui.action=null;{const c=CRIT.levels[lvl];toast('บันทึกผลตรวจ '+r.id+' แล้ว · L'+lvl+' '+c.verdict, c.deadline+(lvl<=3&&!ST.roll(r.id).plan?' · ยังไม่มีในแผน':''),lvl===1?'dmg':'insp');}}
-    if(a==='dmg'){if(!lvl){$('#fe').hidden=false;return;}ST.addDamage(r.id,{date:val('fd'),type:val('ft'),level:lvl,note:val('fn')});ui.action=null;toast('ส่งรายงานความเสียหาย '+r.id+' แล้ว','Damage reported · Level '+lvl,'dmg');}
-    if(a==='rep'){const p=val('fp');if(!p){$('#fe').hidden=false;$('#fp').focus();return;}ST.replace(r.id,{date:val('fd'),newPhys:p,reason:val('fr')});ui.action=null;toast('เปลี่ยนลูก '+r.id+' แล้ว','New roll '+p,'rep');}
-    if(a==='plan'){ST.setPlan(r.id,{date:val('fd'),status:val('fs'),priority:val('fpr'),note:val('fn')});ui.action=null;toast('บันทึกแผนเปลี่ยน '+r.id+' แล้ว','Added to replacement plan','plan');}
+    const by=SF.operator||val('fby'); if(!SF.valid(by)){const fb=$('#fby',box);const er=$('#fbyErr',box);if(er)er.hidden=false;if(fb)fb.focus();return;} if(!SF.operator) SF.setOperator(by);
+    if(a==='insp'){if(!lvl){$('#fe').hidden=false;return;}ST.addInspection(r.id,{date:val('fd'),level:lvl,by,note:val('fn')});ui.action=null;{const c=CRIT.levels[lvl];toast('บันทึกผลตรวจ '+r.id+' แล้ว · L'+lvl+' '+c.verdict, c.deadline+(lvl<=3&&!ST.roll(r.id).plan?' · ยังไม่มีในแผน':''),lvl===1?'dmg':'insp');}}
+    if(a==='dmg'){if(!lvl){$('#fe').hidden=false;return;}ST.addDamage(r.id,{date:val('fd'),type:val('ft'),level:lvl,note:val('fn'),by});ui.action=null;toast('ส่งรายงานความเสียหาย '+r.id+' แล้ว','Damage reported · Level '+lvl,'dmg');}
+    if(a==='rep'){const p=val('fp');if(!p){$('#fe').hidden=false;$('#fp').focus();return;}ST.replace(r.id,{date:val('fd'),newPhys:p,reason:val('fr'),by});ui.action=null;toast('เปลี่ยนลูก '+r.id+' แล้ว','New roll '+p,'rep');}
+    if(a==='plan'){ST.setPlan(r.id,Object.assign({},ST.data.plans[r.id]||{},{date:val('fd'),status:val('fs'),priority:val('fpr'),note:val('fn'),by,src:''}));ui.action=null;toast('บันทึกแผนเปลี่ยน '+r.id+' แล้ว','Added to replacement plan','plan');}
   };
   const first=$('.lvpick button,#fp,#fd',box); first&&first.focus({preventScroll:true});
 }
@@ -392,9 +405,9 @@ pDashboard.wire=el=>{
 
 function timeline(){
   const D=ST.data, ev=[];
-  D.inspections.forEach(x=>ev.push({date:x.date,kind:'insp',pos:x.pos,level:x.level,t:'บันทึกผลตรวจ',s:(x.by||'')+(x.note?' · '+x.note:'')}));
-  D.damages.forEach(x=>ev.push({date:x.date,kind:'dmg',pos:x.pos,level:x.level,t:'แจ้งเสียหาย · '+x.type,s:x.status==='open'?'เปิดอยู่':'ปิดแล้ว'}));
-  D.replacements.forEach(x=>ev.push({date:x.date,kind:'rep',pos:x.pos,t:'เปลี่ยนลูก',s:(x.oldPhys||'?')+' → '+x.newPhys}));
+  D.inspections.forEach(x=>ev.push({date:x.date,kind:'insp',pos:x.pos,level:x.level,t:'บันทึกผลตรวจ',s:[who(x.by),x.note].filter(Boolean).join(' · ')}));
+  D.damages.forEach(x=>ev.push({date:x.date,kind:'dmg',pos:x.pos,level:x.level,t:'แจ้งเสียหาย · '+x.type,s:[who(x.by),x.status==='open'?'เปิดอยู่':'ปิดแล้ว'].filter(Boolean).join(' · ')}));
+  D.replacements.forEach(x=>ev.push({date:x.date,kind:'rep',pos:x.pos,t:'เปลี่ยนลูก',s:[who(x.by),(x.oldPhys||'?')+' → '+x.newPhys].filter(Boolean).join(' · ')}));
   return ev.sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0);
 }
 const KIND={insp:'ตรวจ',dmg:'เสียหาย',rep:'เปลี่ยนลูก'};
@@ -417,7 +430,7 @@ function pInspection(){
   <div class="cols"><div class="card"><h2>คิวตรวจรอบล้าง <span class="sevname">${due.length} ลูก · ยังไม่เคยตรวจ ${never}</span></h2>
    <div class="fl" style="margin-bottom:12px"><button class="fbtn" data-iz="all" aria-pressed="${zf==='all'}">ทุกโซน</button>${ZONES.map(z=>`<button class="fbtn" data-iz="${z.id}" aria-pressed="${zf===z.id}">${z.id}</button>`).join('')}</div>
    ${rows.length?`<div class="tblwrap" style="max-height:560px;overflow:auto"><table class="tbl"><thead><tr><th>ระดับ</th><th>ลูก</th><th>รหัส</th><th>ตรวจล่าสุด</th><th></th></tr></thead><tbody>${rows.slice(0,60).map(r=>{const v=ST.roll(r.id);return `<tr><td>${sevBadge(v.level)}</td><td class="mono"><b>${esc(r.id)}</b></td><td class="mono">${esc(v.code)}</td><td>${v.lastInsp?fmtDate(v.lastInsp.date):'<span class="sevname">ยังไม่เคย</span>'}</td><td style="text-align:right"><button class="btn sm tonal" data-open="${esc(r.id)}" data-action="insp">บันทึกผลตรวจ</button></td></tr>`;}).join('')}</tbody></table></div>${rows.length>60?`<p class="sevname">แสดง 60 จาก ${rows.length} ลูก เรียงจากระดับที่ต้องเฝ้ามากที่สุด · เลือกโซนเพื่อดูส่วนที่เหลือ</p>`:''}`:'<div class="emptyst"><b>ตรวจครบรอบล้างแล้ว</b>ทุกลูกในโซนนี้ตรวจภายใน '+CY+' วัน</div>'}</div>
-   <div class="card"><h2>บันทึกล่าสุด</h2>${recent.length?`<div class="tl">${recent.map(x=>tlItem({date:x.date,kind:'insp',pos:x.pos,level:x.level,t:'บันทึกผลตรวจ',s:[x.by,x.note].filter(Boolean).join(' · ')},true)).join('')}</div>`:'<div class="emptyst"><b>ยังไม่มีบันทึกการตรวจ</b></div>'}</div></div>`);
+   <div class="card"><h2>บันทึกล่าสุด</h2>${recent.length?`<div class="tl">${recent.map(x=>tlItem({date:x.date,kind:'insp',pos:x.pos,level:x.level,t:'บันทึกผลตรวจ',s:[who(x.by),x.note].filter(Boolean).join(' · ')},true)).join('')}</div>`:'<div class="emptyst"><b>ยังไม่มีบันทึกการตรวจ</b></div>'}</div></div>`);
 }
 pInspection.wire=el=>$$('[data-iz]',el).forEach(b=>b.onclick=()=>{pInspection.zone=b.dataset.iz;renderPage('inspection');});
 
@@ -506,9 +519,27 @@ function pConfig(){
     <button class="btn" id="cfgCopy">คัดลอกข้อมูลเป็น JSON (สำรอง)</button>
     <textarea id="cfgJson" class="inpnum" style="width:100%;height:120px;text-align:left;font-size:11px;padding:8px" hidden readonly></textarea>
    </div></div></div>
+   <section class="card"><h2><span class="bi row"><span class="th">พนักงาน</span><span class="en">${SF.people.length} คน · เก็บในเบราว์เซอร์เครื่องนี้เท่านั้น</span></span></h2>
+    ${SF.TEAMS.map(t=>{const ps=SF.people.filter(p=>p.team===t);return `<div class="team"><h3>ทีม ${t} <span class="sevname">${ps.length} คน</span></h3>${ps.length?`<div class="grows">${ps.map(p=>`<div class="grow srow"><span class="id">${esc(p.code)}</span><span class="cell"><b>${esc(SF.displayName(p.code))}</b></span><span class="cell sevname">${esc(p.position)}</span><button class="linkbtn" data-delstaff="${esc(p.code)}">ลบ</button></div>`).join('')}</div>`:'<div class="none">ยังไม่มีรายชื่อ</div>'}</div>`;}).join('')}
+    ${SF.people.filter(p=>!SF.TEAMS.includes(p.team)).length?`<div class="team"><h3>ไม่ระบุทีม</h3><div class="grows">${SF.people.filter(p=>!SF.TEAMS.includes(p.team)).map(p=>`<div class="grow srow"><span class="id">${esc(p.code)}</span><span class="cell"><b>${esc(SF.displayName(p.code))}</b></span><span class="cell sevname">${esc(p.position)}</span><button class="linkbtn" data-delstaff="${esc(p.code)}">ลบ</button></div>`).join('')}</div></div>`:''}
+    <form id="staffForm" class="form" style="box-shadow:inset 0 0 0 2px var(--line);margin-top:16px">
+      <h4><span>เพิ่มรายชื่อ</span></h4>
+      <div class="field"><label for="staffPaste">วางจาก Excel ได้ทั้งตาราง (รหัส · ชื่อ-นามสกุล · ตำแหน่ง) หนึ่งคนต่อบรรทัด</label><textarea id="staffPaste" style="height:132px;font-family:var(--mono)" placeholder="123456&#9;นาย ชื่อ นามสกุล&#9;ตำแหน่ง"></textarea></div>
+      <div class="frow"><div class="field"><label for="staffTeam">ทีม</label><select id="staffTeam">${SF.TEAMS.map(t=>`<option value="${t}">ทีม ${t}</option>`).join('')}<option value="">ไม่ระบุทีม</option></select></div><div class="field"><label>&nbsp;</label><div class="sevname" id="staffPrev" style="white-space:normal;min-height:56px;display:flex;align-items:center">วางรายชื่อแล้วจะเห็นตัวอย่างก่อนบันทึก</div></div></div>
+      <span class="err" id="staffErr" hidden></span>
+      <div class="fbtns"><button class="btn pri">เพิ่มเข้าทีม</button></div>
+    </form>
+    <p class="sevname" style="margin:12px 0 0;white-space:normal">แสดงเฉพาะชื่อ ถ้าชื่อซ้ำกันจะเติมอักษรแรกของนามสกุล รายชื่อนี้ไม่ถูกเก็บในโค้ดหรือ GitHub เมื่อเชื่อม Supabase จะย้ายไปเก็บที่นั่นเพื่อใช้ร่วมกันทุกเครื่อง</p>
+   </section>
    <div class="card"><h2>ตำแหน่งลูกกลิ้ง</h2><p class="sevname" style="margin:0">ตำแหน่ง ${ROLLS.length} ลูกมาจากแบบ GA (${ZONES.map(z=>z.id+' '+z.count).join(' · ')}) อยู่ในไฟล์ <span class="mono">js/layout-data.js</span> และไม่เปลี่ยนตามข้อมูลการตรวจ</p></div>`);
 }
 pConfig.wire=el=>{
+  const ta=$('#staffPaste',el), prev=$('#staffPrev',el);
+  ta.oninput=()=>{const {people,bad}=SF.parse(ta.value);prev.innerHTML=people.length?`จะเพิ่ม ${people.length} คน: ${people.slice(0,6).map(p=>esc(p.code)+' '+esc(p.name.replace(/^(นาย|นางสาว|นาง)\s*/,'').split(/\s+/)[0])).join(', ')}${people.length>6?' …':''}${bad.length?` · อ่านไม่ได้บรรทัด ${bad.join(', ')}`:''}`:'วางรายชื่อแล้วจะเห็นตัวอย่างก่อนบันทึก';};
+  $('#staffForm',el).onsubmit=e=>{e.preventDefault();const {people,bad}=SF.parse(ta.value);const er=$('#staffErr',el);
+    if(!people.length){er.hidden=false;er.textContent='ไม่พบรายชื่อ ตรวจว่ามีรหัสพนักงานเป็นตัวเลขอยู่หน้าชื่อ';return;}
+    SF.addMany(people,$('#staffTeam',el).value);toast('เพิ่มรายชื่อ '+people.length+' คนแล้ว',bad.length?'ข้ามบรรทัด '+bad.join(', '):'','ok');};
+  $$('[data-delstaff]',el).forEach(b=>b.onclick=()=>{const c=b.dataset.delstaff;if(b.dataset.sure){SF.remove(c);toast('ลบ '+c+' แล้ว');}else{b.dataset.sure='1';b.textContent='ยืนยันลบ';b.classList.add('danger');}});
   $('#cfgDemo',el).onclick=()=>{ST.loadDemo();toast('โหลดข้อมูลตัวอย่างแล้ว');};
   $('#cfgPlan',el).onclick=()=>{ST.loadPlan2570();toast('โหลดแผน 2570 แล้ว','26 ลูก · 13 คู่','plan');};
   $('#cfgClear',el).onclick=()=>{$('#clrBox',el).innerHTML='<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span>ลบบันทึกทั้งหมดในเครื่องนี้? กู้คืนไม่ได้</span><button class="btn danger" id="cfgYes">ลบทั้งหมด</button><button class="btn" id="cfgNo">ยกเลิก</button></div>';
@@ -526,5 +557,23 @@ addEventListener('keydown',e=>{if(ui.page!=='layout'||/INPUT|TEXTAREA|SELECT/.te
   if(e.key==='/'){e.preventDefault();findq.focus();}
   if(e.key==='Escape'&&ui.sel){ui.sel=null;SC.ready&&SC.select(null);setTab('rolls');}
   if(ui.sel&&(e.key==='ArrowRight'||e.key==='ArrowLeft')){const n=ROLLS[ui.sel.i+(e.key==='ArrowRight'?1:-1)];if(n)selectRoll(n,{fly:true});}});
+/* ---------- operator of this shift (nav chip) ---------- */
+function renderOp(){
+  const c=SF.operator, b=$('#opChip');
+  b.innerHTML=c?`${tile('ok',28)}<span class="bi"><span class="th">${esc(who(c))}</span><span class="en">ผู้บันทึกกะนี้ · ${esc(c)}</span></span>`:`${tile('idle',28)}<span class="bi"><span class="th">ใส่รหัสพนักงาน</span><span class="en">ผู้บันทึกกะนี้</span></span>`;
+  b.classList.toggle('none',!c);
+}
+function openOp(){
+  const p=$('#opPop'); p.hidden=!p.hidden; if(p.hidden) return;
+  const c=SF.operator;
+  p.innerHTML=`<form id="opForm" class="opform"><label for="opCode" class="th">รหัสพนักงานผู้บันทึกกะนี้</label><div class="byin"><input id="opCode" inputmode="numeric" autocomplete="off" maxlength="8" value="${esc(c||'')}" placeholder="รหัส 6 หลัก"><span class="byname" id="opName">${c?esc(who(c)):''}</span></div><span class="err" id="opErr" hidden>${SF.people.length?'ไม่พบรหัสนี้ในรายชื่อพนักงาน':'ใส่รหัสพนักงาน 4–8 หลัก'}</span><span class="sevname" style="white-space:normal">ใช้กับทุกบันทึกในเครื่องนี้ 12 ชั่วโมง หรือจนกว่าจะเปลี่ยน</span><div class="fbtns">${c?'<button type="button" class="btn sm" id="opOut">ออกจากกะ</button>':''}<button class="btn sm pri">ยืนยัน</button></div></form>`;
+  const i=$('#opCode'); i.focus(); i.oninput=()=>{$('#opName').textContent=SF.displayName(i.value.trim())||'';$('#opErr').hidden=true;};
+  $('#opForm').onsubmit=e=>{e.preventDefault();const v=i.value.trim();if(!SF.valid(v)){$('#opErr').hidden=false;return;}SF.setOperator(v);p.hidden=true;toast('ผู้บันทึกกะนี้: '+who(v),'รหัส '+v,'ok');};
+  const o=$('#opOut'); if(o) o.onclick=()=>{SF.setOperator(null);p.hidden=true;};
+}
+$('#opChip').onclick=openOp;
+document.addEventListener('pointerdown',e=>{const p=$('#opPop');if(!p.hidden&&!e.target.closest('#opPop,#opChip'))p.hidden=true;});
+SF.on(()=>{renderOp();if(ui.page==='layout'&&ui.tab==='detail')renderActionForm();else if(ui.page!=='layout')renderPage(ui.page);});
+renderOp();
 window.__trm={ui,selectRoll,ROLLS};
 })();

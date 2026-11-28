@@ -58,9 +58,17 @@ window.TRM_STORE=(function(){
       });
     });
     L.ZONES.forEach(z=>{d.inventory[z.id]={stock:0,min:0};});
+    addCleanBaseline(d);
     return d;
   }
+  /* Crack 2026 covered the whole line: rolls not on the plan had no crack (level 5, OK) */
+  function addCleanBaseline(d){
+    const has=new Set(d.inspections.map(x=>x.pos));
+    L.ROLLS.forEach(r=>{if(!has.has(r.id)) d.inspections.push({id:uid(),pos:r.id,date:REF.PLAN.inspectionYear,level:5,by:'',note:'ไม่พบรอยแตก · ผลตรวจ Crack '+REF.PLAN.inspectionYear,src:'plan2570'});});
+    d.cleanBaseline=true;
+  }
   if(!D){D=seedPlan(); save();}
+  else if(D.source==='plan2570'&&!D.cleanBaseline){addCleanBaseline(D); save();}
 
   /* ---------- derived index ---------- */
   let IDX={};
@@ -102,10 +110,10 @@ window.TRM_STORE=(function(){
     counts(zoneId){const a=[0,0,0,0,0,0];L.ROLLS.forEach(r=>{if(!zoneId||r.z.id===zoneId)a[IDX[r.id].level]++;});return a;},
     today,
     addInspection(pos,{date,level,by,note}){D.inspections.push({id:uid(),pos,date:date||today(),level,by:by||'',note:note||''});D.demo=D.demo;save();emit('inspection');},
-    addDamage(pos,{date,type,level,note}){D.damages.push({id:uid(),pos,date:date||today(),type,level,note:note||'',status:'open'});save();emit('damage');},
+    addDamage(pos,{date,type,level,note,by}){D.damages.push({id:uid(),pos,date:date||today(),type,level,note:note||'',status:'open',by:by||''});save();emit('damage');},
     setDamageStatus(id,status){const x=D.damages.find(d=>d.id===id);if(x){x.status=status;save();emit('damage');}},
-    replace(pos,{date,newPhys,reason}){
-      const cur=D.rolls[pos]||{}; D.replacements.push({id:uid(),pos,date:date||today(),oldPhys:cur.phys||'',newPhys,reason:reason||''});
+    replace(pos,{date,newPhys,reason,by}){
+      const cur=D.rolls[pos]||{}; D.replacements.push({id:uid(),pos,date:date||today(),oldPhys:cur.phys||'',newPhys,reason:reason||'',by:by||''});
       D.rolls[pos]={phys:newPhys,install:date||today()};
       D.damages.forEach(x=>{if(x.pos===pos&&x.status==='open')x.status='closed';});
       delete D.plans[pos]; save(); emit('replace');
