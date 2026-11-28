@@ -18,15 +18,17 @@ window.TRM_SCENE=(function(){
     const set=(k,c,o)=>{ if(!mats[k]) mats[k]=new THREE.MeshStandardMaterial(Object.assign({color:0xffffff,metalness:.35,roughness:.55},o)); mats[k].color.copy(lin(c)); };
     set('floor',css('--floor'),{metalness:0,roughness:1});
     set('steelDark',css('--steel-dark'),{metalness:.6,roughness:.45});
-    set('frame',css('--frame'),{metalness:.3,roughness:.7});
-    set('motor',css('--motor'),{metalness:.3,roughness:.5});
+    set('frame',css('--paint'),{metalness:.25,roughness:.42});
+    set('frameDark',css('--paint-dark'),{metalness:.25,roughness:.5});
+    set('bolt',css('--steel'),{metalness:.9,roughness:.3});
+    set('motor',css('--motor'),{metalness:.35,roughness:.4});
     set('pit',css('--grid'),{metalness:0,roughness:1});
-    set('steel',css('--steel'),{metalness:.7,roughness:.35});
-    set('housing',css('--housing'),{metalness:.15,roughness:.55,transparent:true,opacity:.42,depthWrite:false});
-    set('housingLo',css('--housing-lo'),{metalness:.1,roughness:.7,transparent:true,opacity:.5,depthWrite:false});
-    if(!mats.roll) mats.roll=new THREE.MeshStandardMaterial({color:0xffffff,metalness:.55,roughness:.38});
+    set('steel',css('--steel'),{metalness:.92,roughness:.24});
+    set('housing',css('--housing'),{metalness:.2,roughness:.4});
+    set('housingLo',css('--housing-lo'),{metalness:.15,roughness:.5});
+    if(!mats.roll) mats.roll=new THREE.MeshStandardMaterial({color:0xffffff,metalness:1,roughness:.3,map:brushedTex(),roughnessMap:brushedTex(true),envMapIntensity:1.15});
     if(mats.grid) mats.grid.color.copy(lin(css('--floor-grid')));
-    SEV.ni=lin(css('--steel')); SEV.dim=lin(css('--line-2'));
+    SEV.ni=lin(css('--roll-bare')); SEV.dim=lin(css('--line-2'));
     [1,2,3,4,5].forEach(k=>SEV[k]=lin(css('--l'+k)));
     if(selMesh){selMesh.material.color.copy(lin(css('--hl')));}
     needs=true;
@@ -38,12 +40,72 @@ window.TRM_SCENE=(function(){
   function cyl(r,h,m,x,y,z,axis,g,seg=24){const o=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,seg),m);o.position.set(x,y,z);if(axis==='z')o.rotation.x=Math.PI/2;if(axis==='x')o.rotation.z=Math.PI/2;o.castShadow=true;(g||scene).add(o);return o;}
   function label(text,cls,x,y,z){const d=document.createElement('div');d.className='lbl'+(cls?' '+cls:'');d.innerHTML=text;const o=new THREE.CSS2DObject(d);o.position.set(x,y,z);scene.add(o);return o;}
 
+  /* brushed finish: fine rings around the circumference (lathe UV v runs along the roll) */
+  const texCache={};
+  function brushedTex(rough){
+    const k=rough?'r':'c'; if(texCache[k]) return texCache[k];
+    const c=document.createElement('canvas'); c.width=8; c.height=512; const g=c.getContext('2d');
+    let seed=11; const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+    for(let y=0;y<512;y++){const v=rough?90+rnd()*80:222+rnd()*30;g.fillStyle=`rgb(${v},${v},${v})`;g.fillRect(0,y,8,1);}
+    const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping; if(!rough) t.encoding=THREE.sRGBEncoding; texCache[k]=t; return t;
+  }
+  /* soft-box studio environment so steel reads as polished metal */
+  function studioEnv(){
+    const c=document.createElement('canvas'); c.width=512; c.height=256; const g=c.getContext('2d');
+    const sky=g.createLinearGradient(0,0,0,256); sky.addColorStop(0,'#ffffff'); sky.addColorStop(.38,'#dfe6ee'); sky.addColorStop(.48,'#5d6775'); sky.addColorStop(.56,'#aeb8c4'); sky.addColorStop(.7,'#3f4753'); sky.addColorStop(1,'#20252d');
+    g.fillStyle=sky; g.fillRect(0,0,512,256);
+    g.fillStyle='rgba(255,255,255,.95)'; [[40,30,120,40],[300,20,160,34],[200,70,60,18]].forEach(([x,y,w,h])=>g.fillRect(x,y,w,h));
+    g.fillStyle='rgba(20,26,34,.7)'; g.fillRect(0,118,512,6); g.fillStyle='rgba(255,255,255,.8)'; g.fillRect(0,136,512,5);
+    const t=new THREE.CanvasTexture(c); t.mapping=THREE.EquirectangularReflectionMapping; t.encoding=THREE.sRGBEncoding;
+    const pm=new THREE.PMREMGenerator(renderer); const env=pm.fromEquirectangular(t).texture; pm.dispose(); t.dispose(); return env;
+  }
+  /* merge simple geometries into one (non-indexed position + normal) so a whole part is one instance */
+  function merge(parts){
+    const geos=parts.map(([geo,m])=>{let g=geo.index?geo.toNonIndexed():geo.clone(); if(m) g.applyMatrix4(m); g.deleteAttribute('uv'); return g;});
+    let n=0; geos.forEach(g=>n+=g.attributes.position.count);
+    const pos=new Float32Array(n*3), nor=new Float32Array(n*3); let o=0;
+    geos.forEach(g=>{pos.set(g.attributes.position.array,o*3);nor.set(g.attributes.normal.array,o*3);o+=g.attributes.position.count;g.dispose();});
+    const out=new THREE.BufferGeometry(); out.setAttribute('position',new THREE.BufferAttribute(pos,3)); out.setAttribute('normal',new THREE.BufferAttribute(nor,3)); return out;
+  }
+  const M4=(x,y,z,rx=0,ry=0,rz=0)=>new THREE.Matrix4().compose(new THREE.Vector3(x,y,z),new THREE.Quaternion().setFromEuler(new THREE.Euler(rx,ry,rz)),new THREE.Vector3(1,1,1));
+  const B=(w,h,d)=>new THREE.BoxGeometry(w,h,d);
+  const C=(r,h,seg=20,r2)=>new THREE.CylinderGeometry(r2??r,r,h,seg);
+  /* plummer-block bearing housing: pedestal, round housing, cap and four bolts (unit: roll axis at 0) */
+  function chockGeo(rj){
+    const R=rj*1.9, w=R*2.3;
+    return merge([
+      [B(w,0.06,0.2),M4(0,-R-0.06,0)],
+      [B(R*1.6,R*0.9,0.18),M4(0,-R*0.55,0)],
+      [C(R,0.2,24),M4(0,0,0,Math.PI/2)],
+      [C(R*0.62,0.24,20),M4(0,0,0,Math.PI/2)],
+      [B(R*1.3,0.04,0.2),M4(0,R*0.2,0)],
+      ...[-1,1].flatMap(s=>[[C(0.018,0.05,8),M4(s*w*0.4,-R-0.01,0.05)],[C(0.018,0.05,8),M4(s*w*0.4,-R-0.01,-0.05)]])
+    ]);
+  }
+  /* geared motor: finned motor, gearbox, coupling guard (unit: output shaft axis along +z) */
+  function motorGeo(mr,ml){
+    const fins=[]; for(let i=0;i<10;i++){const a=i/10*Math.PI*2;fins.push([B(0.012,mr*0.22,ml*0.72),M4(Math.cos(a)*mr*1.02,Math.sin(a)*mr*1.02,ml*0.55,0,0,a+Math.PI/2)]);}
+    return merge([
+      [B(mr*2.1,mr*2.0,mr*1.5),M4(0,-mr*0.15,mr*0.75)],
+      [C(mr,ml,24),M4(0,0,mr*1.5+ml/2,Math.PI/2)],
+      [C(mr*0.8,0.03,24),M4(0,0,mr*1.5+ml+0.015,Math.PI/2)],
+      ...fins.map(([g,m])=>[g,m.premultiply(M4(0,0,mr*1.5))]),
+      [B(mr*0.7,mr*0.5,mr*0.7),M4(0,mr*1.15,mr*1.5+ml*0.3)],
+      [C(0.05,0.28,14),M4(0,0,-0.14,Math.PI/2)],
+      [C(0.085,0.1,16),M4(0,0,-0.3,Math.PI/2)]
+    ]);
+  }
+
   function rollGeo(z){
-    const Ln=z.len, rE=z.dEnd/2, rM=z.dMid/2, pts=[], n=16;
-    pts.push(new THREE.Vector2(0.001,-Ln/2-0.25),new THREE.Vector2(0.06,-Ln/2-0.25),new THREE.Vector2(0.06,-Ln/2),new THREE.Vector2(rE*0.9,-Ln/2));
-    for(let i=0;i<=n;i++){const t=i/n,y=-Ln/2+t*Ln,k=Math.abs(t-.5)*2;pts.push(new THREE.Vector2(rM+(rE-rM)*Math.pow(k,1.1),y));}
-    pts.push(new THREE.Vector2(rE*0.9,Ln/2),new THREE.Vector2(0.06,Ln/2),new THREE.Vector2(0.06,Ln/2+0.25),new THREE.Vector2(0.001,Ln/2+0.25));
-    const g=new THREE.LatheGeometry(pts,28); g.rotateX(Math.PI/2); return g;
+    const Ln=z.len, rE=z.dEnd/2, rM=z.dMid/2, n=20, ch=Math.min(0.025,rE*0.12);
+    const rS=rE*0.62, rJ=z.rJ=rE*0.46, rT=rE*0.3;
+    const half=[];                                     // from the body centre outwards, mirrored below
+    for(let i=0;i<=n;i++){const t=i/n,y=t*Ln/2,k=Math.pow(t,1.6);half.push([rM+(rE-rM)*k*(t<.98?1:1),y]);}
+    half.push([rE-ch,Ln/2+ch*0.4],[rS+0.012,Ln/2+0.012],[rS,Ln/2+0.02],[rS,Ln/2+0.07],[rJ+0.008,Ln/2+0.078],[rJ,Ln/2+0.085],[rJ,Ln/2+0.3],[rT+0.006,Ln/2+0.306],[rT,Ln/2+0.31],[rT,Ln/2+0.46],[rT-0.01,Ln/2+0.47],[0.001,Ln/2+0.47]);
+    const pts=[...half.slice().reverse().map(([r,y])=>new THREE.Vector2(r,-y)),...half.slice(1).map(([r,y])=>new THREE.Vector2(r,y))];
+    const g=new THREE.LatheGeometry(pts,40);
+    const uv=g.attributes.uv; for(let i=0;i<uv.count;i++) uv.setY(i,uv.getY(i)*24);  // fine brushing rings
+    g.rotateX(Math.PI/2); return g;
   }
 
   function init(container,handlers){
@@ -62,7 +124,9 @@ window.TRM_SCENE=(function(){
     ctl.addEventListener('change',()=>needs=true);
     ctl.addEventListener('start',()=>{fly=null;});
 
-    scene.add(new THREE.HemisphereLight(0xffffff,0x8090a0,.78));
+    renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.05;
+    scene.environment=studioEnv();
+    scene.add(new THREE.HemisphereLight(0xffffff,0x8a96a6,.55));
     const sun=new THREE.DirectionalLight(0xffffff,.9); sun.position.set(-30,60,40); sun.castShadow=true;
     sun.shadow.mapSize.set(4096,1024); Object.assign(sun.shadow.camera,{left:-100,right:100,top:20,bottom:-20,near:1,far:200}); scene.add(sun,sun.target);
     const fill=new THREE.DirectionalLight(0xffffff,.25); fill.position.set(40,20,-30); scene.add(fill);
@@ -91,23 +155,24 @@ window.TRM_SCENE=(function(){
       im.instanceColor.needsUpdate=true; scene.add(im); rollIMs.push(im); z.geo=im.geometry;
     });
 
-    /* chocks + individual drives (work side), instanced */
-    const unitBox=new THREE.BoxGeometry(1,1,1), unitCyl=new THREE.CylinderGeometry(1,1,1,18); unitCyl.rotateX(Math.PI/2);
+    /* bearing housings, couplings and geared motors (work side), instanced per zone size */
     const driven=ROLLS.filter(r=>r.z.id!=='D');
-    const chock=new THREE.InstancedMesh(unitBox,mats.steelDark,ROLLS.length*2);
-    const shaft=new THREE.InstancedMesh(unitCyl,mats.steelDark,driven.length);
-    const motor=new THREE.InstancedMesh(unitCyl,mats.motor,driven.length);
-    const base=new THREE.InstancedMesh(unitBox,mats.frame,driven.length);
-    [chock,shaft,motor,base].forEach(m=>{m.castShadow=true;});
-    let ci=0;
-    ROLLS.forEach(r=>{[-1,1].forEach(s=>{dummy.position.set(r.x,r.y,s*(r.z.len/2+0.2));dummy.scale.set(0.26,0.30,0.22);dummy.updateMatrix();chock.setMatrixAt(ci++,dummy.matrix);});});
-    driven.forEach((r,k)=>{
-      const z=r.z, y=r.y, mz=z.len/2+0.75, mr=z.id==='A'?0.13:0.19, ml=z.id==='A'?0.45:0.62;
-      dummy.position.set(r.x,y,z.len/2+0.45); dummy.scale.set(0.04,0.04,0.5); dummy.updateMatrix(); shaft.setMatrixAt(k,dummy.matrix);
-      dummy.position.set(r.x,y,mz+ml/2); dummy.scale.set(mr,mr,ml); dummy.updateMatrix(); motor.setMatrixAt(k,dummy.matrix);
-      const bh=y-mr+0.02; dummy.position.set(r.x,(y-mr)/2,mz+ml/2); dummy.scale.set(mr*2.2,bh,ml+0.1); dummy.updateMatrix(); base.setMatrixAt(k,dummy.matrix);
+    ZONES.forEach(z=>{
+      const list=ROLLS.filter(r=>r.z===z); if(!list.length) return;
+      const ck=new THREE.InstancedMesh(chockGeo(z.rJ),mats.frameDark,list.length*2); ck.castShadow=true;
+      list.forEach((r,k)=>[-1,1].forEach((s,j)=>{dummy.position.set(r.x,r.y,s*(z.len/2+0.185));dummy.rotation.set(0,0,0);dummy.scale.set(1,1,1);dummy.updateMatrix();ck.setMatrixAt(k*2+j,dummy.matrix);}));
+      groups.frames.add(ck);
+      if(z.id==='D') return;
+      const mr=z.id==='A'?0.11:0.15, ml=z.id==='A'?0.34:0.46;
+      const mo=new THREE.InstancedMesh(motorGeo(mr,ml),mats.motor,list.length); mo.castShadow=true;
+      const pd=new THREE.InstancedMesh(B(1,1,1),mats.frame,list.length); pd.castShadow=true;
+      list.forEach((r,k)=>{
+        const z0=z.len/2+0.62;
+        dummy.position.set(r.x,r.y,z0);dummy.scale.set(1,1,1);dummy.updateMatrix();mo.setMatrixAt(k,dummy.matrix);
+        const top=r.y-mr*1.15; dummy.position.set(r.x,top/2,z0+mr*0.75);dummy.scale.set(mr*2.4,top,mr*1.9);dummy.updateMatrix();pd.setMatrixAt(k,dummy.matrix);
+      });
+      groups.motors.add(mo,pd);
     });
-    groups.frames.add(chock); groups.motors.add(shaft,motor,base);
 
     /* roll-number labels (shown when zoomed in) */
     ROLLS.forEach(r=>{const o=label('<b></b>'+r.id.replace('#',''),'rn',r.x,TOP+0.35,-r.z.len/2-0.6);r.lbl=o;});
@@ -116,10 +181,22 @@ window.TRM_SCENE=(function(){
     ZONES.forEach(z=>{
       if(z.id==='D') return;
       const Lz=z.x1-z.x0+0.8, cx=(z.x0+z.x1)/2;
-      [-1,1].forEach(s=>box(Lz,0.32,0.36,mats.frame,cx,TOP-0.55,s*(z.len/2+0.2),groups.frames));
-      box(Lz,0.12,z.len+0.6,mats.frame,cx,0.06,0,groups.frames);
-      const legs=Math.max(2,Math.round(Lz/3));
-      for(let i=0;i<=legs;i++){const lx=z.x0-0.4+Lz*i/legs;[-1,1].forEach(s=>box(0.22,TOP-0.7,0.22,mats.frame,lx,(TOP-0.7)/2+0.1,s*(z.len/2+0.2),groups.frames));}
+      const rail=TOP-z.dEnd/2-z.rJ*1.9-0.1;            // top of rail = under the bearing pedestals
+      [-1,1].forEach(s=>{const zc=s*(z.len/2+0.185);
+        box(Lz,0.04,0.36,mats.frame,cx,rail-0.02,zc,groups.frames);          // top flange
+        box(Lz,0.26,0.035,mats.frame,cx,rail-0.17,zc+s*0.16,groups.frames);  // web (outer)
+        box(Lz,0.04,0.36,mats.frame,cx,rail-0.32,zc,groups.frames);          // bottom flange
+      });
+      const legs=Math.max(2,Math.round(Lz/2.6)), lh=rail-0.34;
+      for(let i=0;i<=legs;i++){const lx=z.x0-0.4+Lz*i/legs;
+        [-1,1].forEach(s=>{const zc=s*(z.len/2+0.185);
+          box(0.16,lh,0.03,mats.frame,lx,lh/2,zc,groups.frames);               // H-beam web
+          box(0.02,lh,0.18,mats.frame,lx-0.07,lh/2,zc,groups.frames);           // flanges
+          box(0.02,lh,0.18,mats.frame,lx+0.07,lh/2,zc,groups.frames);
+          box(0.3,0.03,0.3,mats.frameDark,lx,0.015,zc,groups.frames);           // base plate
+        });
+        box(0.08,0.08,z.len+0.37,mats.frame,lx,lh*0.35,0,groups.frames);       // cross tie
+      }
     });
 
     /* Roughing mill stand (translucent guide) */
