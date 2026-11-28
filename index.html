@@ -28,7 +28,7 @@
   --ease:cubic-bezier(.22,.9,.24,1); --gap:12px;
   --tile-mix:#FFFFFF;
   /* 3D scene */
-  --floor:#C5CFDC; --floor-grid:#AEBACA; --paint:#2F6CD6; --paint-dark:#24539F; --roll-bare:#E6EAEF; --steel:#C3CAD3; --steel-dark:#5E6873; --frame:#3C4652; --motor:#3A5F86; --housing:#3D6DB6; --housing-lo:#E8EDF2; --hl:#FFD43B;
+  --floor:#C5CFDC; --floor-grid:#AEBACA; --paint:#2F6CD6; --paint-dark:#24539F; --roll-bare:#E6EAEF; --ghost:#B4BFCC; --steel:#C3CAD3; --steel-dark:#5E6873; --frame:#3C4652; --motor:#3A5F86; --housing:#3D6DB6; --housing-lo:#E8EDF2; --hl:#FFD43B;
   /* severity scale = house status colours (user spec: L1 red · L2 orange · L3 yellow · L4 blue · L5 green) */
   --l1:var(--leak); --l2:var(--abn); --l3:#E0A700; /* brighter than --low so Medium reads yellow on steel */ --l4:var(--drain); --l5:var(--run); --ni:var(--stop);
   /* aliases used by the app modules */
@@ -42,7 +42,7 @@
   --fg:#EEF1F6; --fg-2:#A9B2C0; --fg-3:#7F8898; --primary:#7EA5FF; --primary-soft:rgba(126,165,255,.16); --on-primary:#0B0F16;
   --run:#4CCB86; --stop:#9EA7B5; --leak:#FF7478; --abn:#FF9E55; --refill:#3FCCA8; --drain:#7EA9FF; --low:#EDB93A; --maint:#A98FFF;
   --toast-bg:rgba(236,240,246,.92); --toast-fg:#111722; --toast-en:#535D6D; --tile-mix:#1C222C; --line-2:#3A4352;
-  --floor:#161C26; --floor-grid:#252E3B; --paint:#3A72D4; --paint-dark:#2A559C; --roll-bare:#D5DBE2; --steel:#B8C0CA; --steel-dark:#6C7682; --frame:#56616E; --motor:#3F78B0; --housing:#3A66A8; --housing-lo:#9AA5B1;
+  --floor:#161C26; --floor-grid:#252E3B; --paint:#3A72D4; --paint-dark:#2A559C; --roll-bare:#D5DBE2; --ghost:#5A6676; --steel:#B8C0CA; --steel-dark:#6C7682; --frame:#56616E; --motor:#3F78B0; --housing:#3A66A8; --housing-lo:#9AA5B1;
   color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0B0F16; --amb1:rgba(70,110,255,.22); --amb2:rgba(30,170,150,.13); --amb3:rgba(255,160,60,.10); --amb4:rgba(140,100,255,.12);
@@ -51,7 +51,7 @@
   --fg:#EEF1F6; --fg-2:#A9B2C0; --fg-3:#7F8898; --primary:#7EA5FF; --primary-soft:rgba(126,165,255,.16); --on-primary:#0B0F16;
   --run:#4CCB86; --stop:#9EA7B5; --leak:#FF7478; --abn:#FF9E55; --refill:#3FCCA8; --drain:#7EA9FF; --low:#EDB93A; --maint:#A98FFF;
   --toast-bg:rgba(236,240,246,.92); --toast-fg:#111722; --toast-en:#535D6D; --tile-mix:#1C222C; --line-2:#3A4352;
-  --floor:#161C26; --floor-grid:#252E3B; --paint:#3A72D4; --paint-dark:#2A559C; --roll-bare:#D5DBE2; --steel:#B8C0CA; --steel-dark:#6C7682; --frame:#56616E; --motor:#3F78B0; --housing:#3A66A8; --housing-lo:#9AA5B1;
+  --floor:#161C26; --floor-grid:#252E3B; --paint:#3A72D4; --paint-dark:#2A559C; --roll-bare:#D5DBE2; --ghost:#5A6676; --steel:#B8C0CA; --steel-dark:#6C7682; --frame:#56616E; --motor:#3F78B0; --housing:#3A66A8; --housing-lo:#9AA5B1;
   color-scheme:dark}
 [hidden]{display:none!important}
 html,body{height:100%}
@@ -517,6 +517,13 @@ button,.btn,.fbtn,.status,.tagp,.sev,.lbl,.seg button,.tabs button,.navlinks a,.
 .gb.late{background:repeating-linear-gradient(135deg,var(--leak) 0 4px,color-mix(in srgb,var(--leak) 55%,#fff) 4px 8px)}
 .glegend .gb{width:16px;height:16px;border-radius:5px}
 .kcell.l3 b{color:var(--l3)}
+/* zone card names wrap by word (cards are buttons, which are nowrap) */
+.zc .nm{white-space:normal;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.zc .nm small{white-space:nowrap}
+.lvnone{font-size:14px;color:var(--fg-2);padding:6px 0 4px;white-space:nowrap}
+.lvnone b{color:var(--fg)}
+.nw{white-space:nowrap}
+.lbl.call{opacity:.75}
 /* toast & loading */
 .toast{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:50;background:var(--toast-bg);color:var(--toast-fg);padding:12px 20px 12px 12px;border-radius:var(--r-l);display:flex;gap:12px;align-items:center;box-shadow:var(--shadow-up);backdrop-filter:blur(16px);transform:translateX(calc(100% + 40px));transition:transform .4s var(--ease);pointer-events:none;max-width:calc(100% - 32px)}
 .toast.on{transform:none}

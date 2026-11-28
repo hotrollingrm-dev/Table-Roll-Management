@@ -26,6 +26,9 @@ window.TRM_SCENE=(function(){
     set('steel',css('--steel'),{metalness:.92,roughness:.24});
     set('housing',css('--housing'),{metalness:.2,roughness:.4});
     set('housingLo',css('--housing-lo'),{metalness:.15,roughness:.5});
+    /* mill, edger and shear are only position guides: flat, light and see-through so the table rolls lead */
+    set('ghostBlue',css('--housing'),{metalness:0,roughness:1,transparent:true,opacity:.18,depthWrite:false});
+    set('ghostGrey',css('--ghost'),{metalness:0,roughness:1,transparent:true,opacity:.32,depthWrite:false});
     if(!mats.roll) mats.roll=new THREE.MeshStandardMaterial({color:0xffffff,metalness:1,roughness:.3,map:brushedTex(),roughnessMap:brushedTex(true),envMapIntensity:1.15});
     if(mats.grid) mats.grid.color.copy(lin(css('--floor-grid')));
     SEV.ni=lin(css('--roll-bare')); SEV.dim=lin(css('--line-2'));
@@ -96,6 +99,7 @@ window.TRM_SCENE=(function(){
     ]);
   }
 
+  function ghost(g){g.traverse(o=>{if(o.isMesh){o.material=o.material===mats.housing?mats.ghostBlue:mats.ghostGrey;o.castShadow=false;o.receiveShadow=false;o.renderOrder=2;}});}
   function rollGeo(z){
     const Ln=z.len, rE=z.dEnd/2, rM=z.dMid/2, n=20, ch=Math.min(0.025,rE*0.12);
     const rS=rE*0.62, rJ=z.rJ=rE*0.46, rT=rE*0.3;
@@ -216,12 +220,14 @@ window.TRM_SCENE=(function(){
       box(2.2,2.6,2.2,mats.motor,millX,1.2,-7.2,g);
       [-1,1].forEach(s=>{const mx=millX+s*1.36; box(1.6,0.9,1.2,mats.motor,mx,TOP-0.25,-3.4,groups.motors); cyl(0.05,1.6,mats.steelDark,mx,TOP-0.2,-2.3,'z',groups.motors);});
       box(4.6,0.25,2.8,mats.frame,millX,TOP-0.55,0,groups.frames);
+      ghost(g);
       label('Backup Roll','minor call',millX-0.9,topBR+0.4,2.6);
       label('Work Roll','minor call',millX-1.6,tw+0.1,2.6);
     })();
     /* Edger */
     (function(){const g=new THREE.Group();scene.add(g);
       [-1,1].forEach(s=>{cyl(0.42,1.3,mats.steel,edgerX,TOP+0.55,s*1.15,'y',g,40);cyl(0.18,0.5,mats.steelDark,edgerX,TOP+1.45,s*1.15,'y',g,20);box(1.4,TOP+0.05,1.2,mats.housingLo,edgerX,(TOP+0.05)/2-0.1,s*1.35,g);});
+      ghost(g);
       label('Edger','minor call',edgerX,TOP+2.4,0);})();
     /* 150 mm shear */
     (function(){const g=new THREE.Group();scene.add(g);
@@ -229,12 +235,13 @@ window.TRM_SCENE=(function(){
       box(0.16,0.5,3.0,mats.steelDark,SHEAR+0.25,TOP+0.35,0,g);
       [-1,1].forEach(s=>box(0.7,TOP+4.0,0.6,mats.housing,SHEAR+0.9,(TOP+4.0)/2,s*1.9,g));
       box(1.0,0.6,4.4,mats.housing,SHEAR+0.9,TOP+4.2,0,g);
+      ghost(g);
       label('Shear','minor call',SHEAR+0.6,TOP+5.3,0);})();
     /* reference markers */
     const rx=id=>ROLLS.find(r=>r.id===id).x;
     [[(rx('#111')+rx('#112'))/2,'Slab charging point'],[(rx('#126')+rx('#127'))/2,'Slab cleaning device']].forEach(([x,t])=>{label(t,'minor',x,TOP+1.0,2.9);box(0.04,1.0,0.04,mats.frame,x,TOP+0.5,2.4);});
     /* zone labels */
-    const LY={A:2.2,B:2.2,C:4.2,D:7.4,E:4.2,F:2.2};
+    const LY={A:2.2,B:2.2,C:2.4,D:7.4,E:2.4,F:2.2};
     ZONES.forEach(z=>{z.lbl=label('<i>'+z.id+'</i>'+z.name,'',(z.x0+z.x1)/2,TOP+LY[z.id],z.id==='D'?0:-2.2);});
 
     /* selection + hover overlays (one mesh each, geometry swapped per zone) */

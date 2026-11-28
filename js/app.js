@@ -181,11 +181,11 @@ function renderSheet(){
 
 /* zones tab */
 function sbar(a){const T=a.reduce((s,x)=>s+x,0)||1;return `<div class="sbar" role="img" aria-label="${[1,2,3,4,5].map(k=>'L'+k+' '+a[k]).join(', ')}, ยังไม่ตรวจ ${a[0]}">${[1,2,3,4,5,0].map(k=>`<b style="flex-grow:${a[k]};background:${k?`var(--l${k})`:'var(--ni)'};${k?'':'opacity:.55'}"></b>`).join('')}</div>`;}
-function lvrow(a){return `<div class="lvrow">${[1,2,3,4,5].map(k=>`<span><em>L${k}</em><b class="${a[k]?'':'z'}">${a[k]}</b></span>`).join('')}<span><em>ยังไม่ตรวจ</em><b class="${a[0]?'':'z'}">${a[0]}</b></span></div>`;}
+function lvrow(a){const T=a.reduce((x,y)=>x+y,0);if(T&&a[0]===T)return `<div class="lvnone">ยังไม่ตรวจ <b class="mono">${T}</b> ลูก</div>`;return `<div class="lvrow">${[1,2,3,4,5].map(k=>`<span><em>L${k}</em><b class="${a[k]?'':'z'}">${a[k]}</b></span>`).join('')}<span><em>ยังไม่ตรวจ</em><b class="${a[0]?'':'z'}">${a[0]}</b></span></div>`;}
 function renderZones(){
   const all=ST.counts();
   $('#sheetContent').innerHTML=`<div class="tabpane"><div class="zones">${ZONES.map(z=>{const a=ST.counts(z.id);return `<button class="zc" data-z="${z.id}" aria-pressed="${ui.zone===z}"><div class="t"><span class="ztag">${z.id}</span><span class="nm">${esc(z.name)}<small><b>${z.count}</b> ลูก · rolls</small></span></div>${sbar(a)}${lvrow(a)}</button>`;}).join('')}</div>
-  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap;font-size:13px;color:var(--fg2)"><span>ทั้งไลน์ <b class="mono" style="color:var(--fg)">${ROLLS.length}</b> ลูก · Critical <b class="mono" style="color:var(--l1)">${all[1]}</b> · High <b class="mono" style="color:var(--l2)">${all[2]}</b> · ยังไม่ตรวจ <b class="mono" style="color:var(--fg)">${all[0]}</b></span><button class="btn sm" data-allrolls>ดูลูกทั้งไลน์</button></div></div>`;
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap;font-size:13px;color:var(--fg2)"><span>ทั้งไลน์ <b class="mono" style="color:var(--fg)">${ROLLS.length}</b> ลูก · L1 STOP <b class="mono" style="color:var(--l1)">${all[1]}</b> · L2 NG <b class="mono" style="color:var(--l2)">${all[2]}</b> · L3 NG <b class="mono" style="color:var(--l3)">${all[3]}</b> · ยังไม่ตรวจ <b class="mono" style="color:var(--fg)">${all[0]}</b></span><button class="btn sm" data-allrolls>ดูลูกทั้งไลน์</button></div></div>`;
   $$('#sheetContent .zc').forEach(b=>b.onclick=()=>selectZone(zoneOf(b.dataset.z)));
   $('#sheetContent [data-allrolls]').onclick=()=>{ui.zone=null;ui.f.scope='all';ui.pg=0;SC.ready&&SC.fitAll();renderLegend();setTab('rolls');};
 }
@@ -265,7 +265,7 @@ function renderDetail(){
   const recList=(arr,fn,empty)=>arr.length?`<div class="recs">${arr.slice(0,4).map(fn).join('')}</div>${arr.length>4?`<button class="linkbtn" data-hist>ดูทั้งหมด ${arr.length} รายการ</button>`:''}`:`<div class="none">${empty}</div>`;
   $('#sheetContent').innerHTML=`<div class="tabpane det">
    <div>
-     <div class="dhead">${sevBadge(v.level,'big')}<div style="flex:1;min-width:0"><div class="eyebrow">Position ID · Zone ${z.id}</div><div class="pid">${esc(r.id)}</div><div class="sub">รหัสในแผน <b class="mono">${esc(v.code)}</b> · ${esc(z.name)} · ลูกที่ ${k+1} จาก ${zi.length}${r.side?' · '+(r.side==='entry'?'ฝั่งขาเข้า':'ฝั่งขาออก'):''}</div></div>
+     <div class="dhead">${sevBadge(v.level,'big')}<div style="flex:1;min-width:0"><div class="eyebrow">Position ID · Zone ${z.id}</div><div class="pid">${esc(r.id)}</div><div class="sub">รหัสในแผน <b class="mono">${esc(v.code)}</b> · ${esc(z.name)} · <span class="nw">ลูกที่ ${k+1} จาก ${zi.length}</span>${r.side?' · '+(r.side==='entry'?'ฝั่งขาเข้า':'ฝั่งขาออก'):''}</div></div>
        <div style="display:flex;gap:8px"><button class="iconbtn" data-nav="-1" aria-label="ลูกก่อนหน้า" ${r.i===0?'disabled':''}><svg class="i" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button><button class="iconbtn" data-nav="1" aria-label="ลูกถัดไป" ${r.i===ROLLS.length-1?'disabled':''}><svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button></div></div>
      ${verdict}
      <div class="facts">
